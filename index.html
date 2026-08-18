@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Block Blast</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="score-display"></div>
+<div id="theme-toggle"></div>
+<div id="theme-panel"></div>
+<div id="grid"></div>
+
+<script src="game_logic.js"></script>
+<script src="display.js"></script>
+<script>
+    let state = createInitialState(8);
+    state.grid[3][3] = 1;
+    state.grid[3][4] = 1;
+    state.grid[4][4] = 1;
+    state = addPoints(state, 30);
+
+    renderGrid(state);
+    renderScore(state);
+    renderThemePicker();
+</script>
+</body>
+</html>
