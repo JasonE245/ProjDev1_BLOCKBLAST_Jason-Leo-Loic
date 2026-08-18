@@ -1,6 +1,6 @@
 # Projet de développement 
  
-**Nom :** Roux Loïc, Léo Del Duca, Json Roger
+**Nom :** Roux Loïc, Léo Del Duca, Jason Roger
  
 **Sujet :** Block Blast
  
