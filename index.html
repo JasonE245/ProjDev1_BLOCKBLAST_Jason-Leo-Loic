@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Block Blast</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="score-display"></div>
+<div id="combo-display"></div>
+<div id="debug-indicator">MODE DEBUG</div>
+<div id="theme-toggle"></div>
+<div id="theme-panel"></div>
+<div id="grid"></div>
+<div id="piece-tray"></div>
+
+<div id="game-over">
+    <div id="game-over-box">
+        <h1>Partie terminée</h1>
+        <p>Score final</p>
+        <div id="final-score">0</div>
+        <button id="restart-button">Rejouer</button>
+    </div>
+</div>
+
+<script src="game_logic.js"></script>
+<script src="display.js"></script>
+<script>
+    // Couche de contrôle : fait le pont entre la logique pure (game_logic.js) et l'affichage
+    // (display.js), qui ne se connaissent pas. Chaque action suit le même cycle :
+    // action -> nouvel état renvoyé par une fonction pure -> réaffichage complet depuis cet état.
+    let state = createInitialState(8);
+
+    function render() {
+        renderGrid(state, handleDropPiece);
+        renderScore(state);
+        renderPieceTray(state, handleSelectPiece);
+        renderGameOver(state, handleRestart);
+    }
+
+    function handleSelectPiece(pieceId) {
+        state = selectPiece(state, pieceId);
+        render();
+    }
+
+    function handleDropPiece(pieceId, row, col) {
+        state = placePiece(state, pieceId, row, col);
+        render();
+    }
+
+    function handleDebugToggle(row, col) {
+        state = toggleCell(state, row, col);
+        render();
+    }
+
+    function handleRestart() {
+        state = createInitialState(8);
+        render();
+    }
+
+    renderThemePicker();
+    initDebugMode(handleDebugToggle);
+    render();
+</script>
+</body>
+</html>

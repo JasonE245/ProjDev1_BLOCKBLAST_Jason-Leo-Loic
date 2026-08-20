@@ -1,0 +1,251 @@
+:root {
+    --bg-color: #1e1e2e;
+    --grid-bg: #313244;
+    --cell-color: #45475a;
+    --filled-color: #89b4fa;
+    --piece-color-0: #89b4fa;
+    --piece-color-1: #74c7ec;
+    --piece-color-2: #94e2d5;
+    --piece-color-3: #b4befe;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background: var(--bg-color);
+    font-family: sans-serif;
+    user-select: none;
+}
+
+#grid {
+    display: grid;
+    grid-template-columns: repeat(8, 40px);
+    grid-template-rows: repeat(8, 40px);
+    gap: 2px;
+    background: var(--grid-bg);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.cell {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    background: var(--cell-color);
+}
+
+.cell.color-0 { background: var(--piece-color-0); }
+.cell.color-1 { background: var(--piece-color-1); }
+.cell.color-2 { background: var(--piece-color-2); }
+.cell.color-3 { background: var(--piece-color-3); }
+
+.cell.preview-valid {
+    background: var(--filled-color);
+    opacity: 0.5;
+}
+
+.cell.preview-invalid {
+    background: #f38ba8;
+    opacity: 0.5;
+}
+
+#score-display {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--grid-bg);
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+#combo-display {
+    position: fixed;
+    top: 60px;
+    left: 16px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: var(--filled-color);
+    color: var(--bg-color);
+    font-size: 14px;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+#combo-display.visible {
+    opacity: 1;
+}
+
+#game-over {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+}
+
+#game-over.open {
+    display: flex;
+}
+
+#game-over-box {
+    padding: 32px 48px;
+    border-radius: 12px;
+    background: var(--grid-bg);
+    color: white;
+    text-align: center;
+}
+
+#game-over-box h1 {
+    margin: 0 0 16px;
+    font-size: 24px;
+}
+
+#game-over-box p {
+    margin: 0;
+    opacity: 0.7;
+    font-size: 14px;
+}
+
+#final-score {
+    margin: 8px 0 24px;
+    font-size: 40px;
+    font-weight: bold;
+    color: var(--filled-color);
+}
+
+#restart-button {
+    padding: 10px 28px;
+    border: none;
+    border-radius: 8px;
+    background: var(--filled-color);
+    color: var(--bg-color);
+    font-size: 16px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+#debug-indicator {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: #f38ba8;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+body.debug-mode #debug-indicator {
+    display: block;
+}
+
+body.debug-mode #grid .cell {
+    cursor: crosshair;
+}
+
+#theme-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--filled-color);
+    border: 2px solid var(--grid-bg);
+    cursor: pointer;
+}
+
+#theme-panel {
+    position: fixed;
+    top: 52px;
+    right: 16px;
+    display: none;
+    gap: 8px;
+    padding: 8px;
+    background: var(--grid-bg);
+    border-radius: 8px;
+}
+
+#theme-panel.open {
+    display: flex;
+}
+
+.theme-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+
+.theme-swatch:hover {
+    border-color: white;
+}
+
+#piece-tray {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    background: var(--grid-bg);
+    border-radius: 8px;
+}
+
+.piece-slot {
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.piece {
+    display: grid;
+    justify-content: center;
+    align-content: center;
+    gap: 2px;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: grab;
+    border: 2px solid transparent;
+}
+
+.piece:active {
+    cursor: grabbing;
+}
+
+.piece.selected {
+    border-color: var(--filled-color);
+}
+
+.piece.dragging {
+    opacity: 0.35;
+}
+
+.piece-cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+}
+
+.piece-cell.color-0 { background: var(--piece-color-0); }
+.piece-cell.color-1 { background: var(--piece-color-1); }
+.piece-cell.color-2 { background: var(--piece-color-2); }
+.piece-cell.color-3 { background: var(--piece-color-3); }
