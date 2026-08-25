@@ -61,11 +61,32 @@ const SHAPES = {
 // nombre de couleurs disponibles dans la palette du thème actif (voir themes[].pieces dans display.js)
 const PIECE_COLOR_COUNT = 4;
 
-// points de base par ligne/colonne supprimée, bonus par ligne supplémentaire supprimée
-// simultanément, et bonus par palier de combo (parties consécutives avec suppression)
-const LINE_CLEAR_POINTS = 10;
-const MULTI_LINE_BONUS = 10;
-const COMBO_BONUS = 5;
+// Barème de score, approximation du jeu original déduite de mesures en jeu (non officielle) :
+//
+//   score = 30 * L! * min(combo + 1, 6 * L)
+//
+// où L est le nombre de lignes/colonnes cassées d'un seul coup et `combo` le nombre de
+// suppressions consécutives précédentes (le multiplicateur vaut donc 1 à la première
+// suppression, 2 à la deuxième d'affilée, etc., et plafonne à 6 * L).
+//
+// La factorielle rend les suppressions multiples très rentables :
+// bases à combo 0 -> L=1: 30, L=2: 60, L=3: 180, L=4: 720, L=5: 3600.
+//
+// Non couvert : le bonus "board clear" (grille entièrement vidée), qui semble additif et
+// variable (observé entre +525 et +4646), sans motif identifié pour l'instant.
+const BASE_LINE_POINTS = 30;
+const COMBO_CAP_PER_LINE = 6;
+
+function factorial(n) {
+    let result = 1;
+    for (let i = 2; i <= n; i++) result *= i;
+    return result;
+}
+
+function lineClearScore(linesCleared, combo) {
+    const multiplier = Math.min(combo + 1, COMBO_CAP_PER_LINE * linesCleared);
+    return BASE_LINE_POINTS * factorial(linesCleared) * multiplier;
+}
 
 function createInitialState(size = 8) {
     const emptyState = {
@@ -226,11 +247,9 @@ function placePiece(state, pieceId, row, col) {
     return { ...clearedState, pieces: generatePlayablePieces(clearedState, 3) };
 }
 
-// vide les lignes et colonnes entièrement remplies. Le score ajouté combine 3 bonus :
-// - LINE_CLEAR_POINTS par ligne/colonne supprimée
-// - MULTI_LINE_BONUS par ligne supplémentaire supprimée en même temps (plusieurs lignes d'un coup)
-// - COMBO_BONUS par palier de combo, qui augmente tant que les poses successives suppriment
-//   au moins une ligne, et retombe à 0 dès qu'une pose n'en supprime aucune
+// vide les lignes et colonnes entièrement remplies et ajoute les points correspondants
+// (voir lineClearScore). Le combo augmente tant que les poses successives suppriment au moins
+// une ligne, et retombe à 0 dès qu'une pose n'en supprime aucune.
 function clearFullLines(state) {
     const { grid, size } = state;
     const fullRows = [];
@@ -252,10 +271,7 @@ function clearFullLines(state) {
         gridRow.map((cell, c) => (fullRows.includes(r) || fullCols.includes(c) ? 0 : cell))
     );
 
-    const points =
-        linesCleared * LINE_CLEAR_POINTS +
-        (linesCleared - 1) * MULTI_LINE_BONUS +
-        state.combo * COMBO_BONUS;
+    const points = lineClearScore(linesCleared, state.combo);
 
     return addPoints({ ...state, grid: newGrid, combo: state.combo + 1 }, points);
 }
