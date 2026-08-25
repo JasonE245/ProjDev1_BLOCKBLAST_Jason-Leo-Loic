@@ -94,6 +94,9 @@ function createInitialState(size = 8) {
         grid: Array.from({ length: size }, () => Array(size).fill(0)),
         score: 0,
         combo: 0,
+        // vrai dès qu'une ligne a été supprimée pendant le lot de 3 pièces en cours ;
+        // sert à décider, en fin de lot, si le combo se maintient ou retombe à 0
+        clearedDuringBatch: false,
         pieces: [],
         selectedPieceId: null,
     };
@@ -168,19 +171,43 @@ function canPlaceAllInSomeOrder(state, shapeNames) {
     });
 }
 
+// à partir de combien de cases une pièce est considérée comme encombrante
+const LARGE_PIECE_CELLS = 5;
+const MAX_LARGE_PIECES_PER_BATCH = 1;
+
+// Un lot n'est pas tiré au pur hasard : comme dans le jeu original, on écarte les combinaisons
+// qui étouffent le joueur. Deux règles, en plus de la garantie de plaçabilité :
+// - au plus une pièce encombrante (>= LARGE_PIECE_CELLS cases) par lot, pour éviter de recevoir
+//   trois gros blocs d'un coup ;
+// - pas trois fois la même forme, qui donne l'impression d'un tirage cassé.
+function isBatchWellFormed(pieces) {
+    const largeCount = pieces.filter(
+        (piece) => SHAPES[piece.shape].length >= LARGE_PIECE_CELLS
+    ).length;
+    if (largeCount > MAX_LARGE_PIECES_PER_BATCH) return false;
+
+    const distinctShapes = new Set(pieces.map((piece) => piece.shape));
+    return distinctShapes.size > 1 || pieces.length < 3;
+}
+
 // tire un lot dont les `count` pièces sont toutes plaçables à la suite : le joueur peut donc
 // toujours écouler le lot entier s'il joue bien. C'est ce qui fait reposer les défaites sur les
 // choix de placement (skill) plutôt que sur le tirage (chance).
-// En dernier recours après MAX_BATCH_ATTEMPTS essais, on retombe sur un lot dont chaque pièce est
-// au moins plaçable individuellement.
+// Les essais privilégient d'abord les lots bien formés (voir isBatchWellFormed) ; si aucun ne
+// sort à temps, on se rabat sur le premier lot simplement jouable, puis en dernier recours sur
+// un lot dont chaque pièce est au moins plaçable individuellement.
 function generatePlayablePieces(state, count) {
+    let playableFallback = null;
+
     for (let attempt = 0; attempt < MAX_BATCH_ATTEMPTS; attempt++) {
         const pieces = generatePieces(count, state);
-        if (canPlaceAllInSomeOrder(state, pieces.map((piece) => piece.shape))) {
-            return pieces;
-        }
+        if (!canPlaceAllInSomeOrder(state, pieces.map((piece) => piece.shape))) continue;
+
+        if (isBatchWellFormed(pieces)) return pieces;
+        if (!playableFallback) playableFallback = pieces;
     }
-    return generatePieces(count, state);
+
+    return playableFallback || generatePieces(count, state);
 }
 
 // fin de partie : aucune des pièces proposées ne peut être posée où que ce soit
@@ -242,14 +269,26 @@ function placePiece(state, pieceId, row, col) {
     if (clearedState.pieces.length > 0) {
         return clearedState;
     }
+
+    // Fin du lot : le combo ne retombe à 0 que si aucune des 3 pièces n'a supprimé de ligne.
+    // Une pose isolée sans suppression ne casse donc pas le combo tant qu'il reste des pièces
+    // dans le lot pour se rattraper.
+    const combo = clearedState.clearedDuringBatch ? clearedState.combo : 0;
+
     // le nouveau lot est tiré après la suppression des lignes, pour que les pièces soient
     // choisies en fonction de la grille telle qu'elle sera réellement affichée au joueur
-    return { ...clearedState, pieces: generatePlayablePieces(clearedState, 3) };
+    return {
+        ...clearedState,
+        combo,
+        clearedDuringBatch: false,
+        pieces: generatePlayablePieces(clearedState, 3),
+    };
 }
 
 // vide les lignes et colonnes entièrement remplies et ajoute les points correspondants
-// (voir lineClearScore). Le combo augmente tant que les poses successives suppriment au moins
-// une ligne, et retombe à 0 dès qu'une pose n'en supprime aucune.
+// (voir lineClearScore). Le combo monte d'un cran à chaque suppression, mais une pose qui ne
+// supprime rien ne le fait PAS retomber : la remise à zéro se décide en fin de lot, dans
+// placePiece, si aucune des 3 pièces n'a supprimé de ligne.
 function clearFullLines(state) {
     const { grid, size } = state;
     const fullRows = [];
@@ -264,7 +303,7 @@ function clearFullLines(state) {
 
     const linesCleared = fullRows.length + fullCols.length;
     if (linesCleared === 0) {
-        return { ...state, combo: 0 };
+        return state;
     }
 
     const newGrid = grid.map((gridRow, r) =>
@@ -273,5 +312,8 @@ function clearFullLines(state) {
 
     const points = lineClearScore(linesCleared, state.combo);
 
-    return addPoints({ ...state, grid: newGrid, combo: state.combo + 1 }, points);
+    return addPoints(
+        { ...state, grid: newGrid, combo: state.combo + 1, clearedDuringBatch: true },
+        points
+    );
 }
