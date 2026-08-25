@@ -21,6 +21,9 @@ const SHAPES = {
     carre: [[0, 0], [0, 1], [1, 0], [1, 1]],
     carre3: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]],
 
+    rect_2x3: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]],
+    rect_3x2: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]],
+
     ligne4_h: [[0, 0], [0, 1], [0, 2], [0, 3]],
     ligne4_v: [[0, 0], [1, 0], [2, 0], [3, 0]],
     ligne5_h: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]],
@@ -111,18 +114,28 @@ function addPoints(state, points) {
     };
 }
 
-// tire `count` pièces aléatoires. Si un état est fourni, le tirage est restreint aux formes
-// réellement posables sur sa grille : c'est la contrainte de conception du projet, les pièces
-// distribuées doivent toujours permettre de continuer à jouer. Si plus aucune forme n'est
-// posable, on tire sans restriction et isGameOver détectera la fin de partie.
+// Dans le jeu original, environ un tiers des lots sont composés de trois fois la même forme
+// (mesuré sur ~30 débuts de partie : 10 lots identiques sur 31). Un tirage uniforme sur les
+// formes en produirait moins de 1 %, c'est donc un biais volontaire du générateur et pas du
+// hasard : on le reproduit ici.
+const TRIPLE_BATCH_CHANCE = 1 / 3;
+
+// tire `count` pièces. Si un état est fourni, le tirage est restreint aux formes réellement
+// posables sur sa grille : c'est la contrainte de conception du projet, les pièces distribuées
+// doivent toujours permettre de continuer à jouer. Si plus aucune forme n'est posable, on tire
+// sans restriction et isGameOver détectera la fin de partie.
 function generatePieces(count, state = null) {
     const allShapes = Object.keys(SHAPES);
     const playable = state ? allShapes.filter((name) => canPlaceAnywhere(state, name)) : allShapes;
     const shapeNames = playable.length > 0 ? playable : allShapes;
 
+    const pickShape = () => shapeNames[Math.floor(Math.random() * shapeNames.length)];
+    // tiré une seule fois pour tout le lot : non nul, les trois pièces partagent cette forme
+    const tripleShape = Math.random() < TRIPLE_BATCH_CHANCE ? pickShape() : null;
+
     return Array.from({ length: count }, () => ({
         id: `piece-${Math.random().toString(36).slice(2, 9)}`,
-        shape: shapeNames[Math.floor(Math.random() * shapeNames.length)],
+        shape: tripleShape || pickShape(),
         color: Math.floor(Math.random() * PIECE_COLOR_COUNT),
     }));
 }
@@ -171,43 +184,22 @@ function canPlaceAllInSomeOrder(state, shapeNames) {
     });
 }
 
-// à partir de combien de cases une pièce est considérée comme encombrante
-const LARGE_PIECE_CELLS = 5;
-const MAX_LARGE_PIECES_PER_BATCH = 1;
-
-// Un lot n'est pas tiré au pur hasard : comme dans le jeu original, on écarte les combinaisons
-// qui étouffent le joueur. Deux règles, en plus de la garantie de plaçabilité :
-// - au plus une pièce encombrante (>= LARGE_PIECE_CELLS cases) par lot, pour éviter de recevoir
-//   trois gros blocs d'un coup ;
-// - pas trois fois la même forme, qui donne l'impression d'un tirage cassé.
-function isBatchWellFormed(pieces) {
-    const largeCount = pieces.filter(
-        (piece) => SHAPES[piece.shape].length >= LARGE_PIECE_CELLS
-    ).length;
-    if (largeCount > MAX_LARGE_PIECES_PER_BATCH) return false;
-
-    const distinctShapes = new Set(pieces.map((piece) => piece.shape));
-    return distinctShapes.size > 1 || pieces.length < 3;
-}
-
 // tire un lot dont les `count` pièces sont toutes plaçables à la suite : le joueur peut donc
 // toujours écouler le lot entier s'il joue bien. C'est ce qui fait reposer les défaites sur les
 // choix de placement (skill) plutôt que sur le tirage (chance).
-// Les essais privilégient d'abord les lots bien formés (voir isBatchWellFormed) ; si aucun ne
-// sort à temps, on se rabat sur le premier lot simplement jouable, puis en dernier recours sur
-// un lot dont chaque pièce est au moins plaçable individuellement.
+// La composition du lot elle-même n'est pas filtrée : les mesures faites sur le jeu original
+// montrent qu'il distribue volontiers trois fois la même forme, ou plusieurs grosses pièces
+// d'un coup. Seule la plaçabilité est garantie.
+// En dernier recours après MAX_BATCH_ATTEMPTS essais, on retombe sur un lot dont chaque pièce
+// est au moins plaçable individuellement.
 function generatePlayablePieces(state, count) {
-    let playableFallback = null;
-
     for (let attempt = 0; attempt < MAX_BATCH_ATTEMPTS; attempt++) {
         const pieces = generatePieces(count, state);
-        if (!canPlaceAllInSomeOrder(state, pieces.map((piece) => piece.shape))) continue;
-
-        if (isBatchWellFormed(pieces)) return pieces;
-        if (!playableFallback) playableFallback = pieces;
+        if (canPlaceAllInSomeOrder(state, pieces.map((piece) => piece.shape))) {
+            return pieces;
+        }
     }
-
-    return playableFallback || generatePieces(count, state);
+    return generatePieces(count, state);
 }
 
 // fin de partie : aucune des pièces proposées ne peut être posée où que ce soit
