@@ -120,6 +120,27 @@ function addPoints(state, points) {
 // hasard : on le reproduit ici.
 const TRIPLE_BATCH_CHANCE = 1 / 3;
 
+// Le jeu original propose nettement plus souvent ses formes volumineuses que les autres, tant
+// que la grille a de quoi les accueillir. On leur donne donc un poids plus élevé au tirage.
+// Le poids est réglé pour qu'environ la moitié des lots contiennent au moins une de ces formes,
+// ce qui les rend fréquentes sans être systématiques.
+// Aucun test sur la place restante n'est nécessaire : shapeNames ne contient déjà que les formes
+// posables, donc une grille qui se remplit les fait sortir du tirage d'elle-même.
+const BIG_SHAPES = ["carre3", "rect_2x3", "rect_3x2"];
+const BIG_SHAPE_WEIGHT = 5;
+
+function pickWeightedShape(shapeNames) {
+    const weightOf = (name) => (BIG_SHAPES.includes(name) ? BIG_SHAPE_WEIGHT : 1);
+    const total = shapeNames.reduce((sum, name) => sum + weightOf(name), 0);
+
+    let remaining = Math.random() * total;
+    for (const name of shapeNames) {
+        remaining -= weightOf(name);
+        if (remaining < 0) return name;
+    }
+    return shapeNames[shapeNames.length - 1];
+}
+
 // tire `count` pièces. Si un état est fourni, le tirage est restreint aux formes réellement
 // posables sur sa grille : c'est la contrainte de conception du projet, les pièces distribuées
 // doivent toujours permettre de continuer à jouer. Si plus aucune forme n'est posable, on tire
@@ -129,13 +150,13 @@ function generatePieces(count, state = null) {
     const playable = state ? allShapes.filter((name) => canPlaceAnywhere(state, name)) : allShapes;
     const shapeNames = playable.length > 0 ? playable : allShapes;
 
-    const pickShape = () => shapeNames[Math.floor(Math.random() * shapeNames.length)];
     // tiré une seule fois pour tout le lot : non nul, les trois pièces partagent cette forme
-    const tripleShape = Math.random() < TRIPLE_BATCH_CHANCE ? pickShape() : null;
+    const tripleShape =
+        Math.random() < TRIPLE_BATCH_CHANCE ? pickWeightedShape(shapeNames) : null;
 
     return Array.from({ length: count }, () => ({
         id: `piece-${Math.random().toString(36).slice(2, 9)}`,
-        shape: tripleShape || pickShape(),
+        shape: tripleShape || pickWeightedShape(shapeNames),
         color: Math.floor(Math.random() * PIECE_COLOR_COUNT),
     }));
 }
