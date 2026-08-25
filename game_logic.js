@@ -114,11 +114,22 @@ function addPoints(state, points) {
     };
 }
 
-// Dans le jeu original, environ un tiers des lots sont composés de trois fois la même forme
-// (mesuré sur ~30 débuts de partie : 10 lots identiques sur 31). Un tirage uniforme sur les
-// formes en produirait moins de 1 %, c'est donc un biais volontaire du générateur et pas du
-// hasard : on le reproduit ici.
-const TRIPLE_BATCH_CHANCE = 1 / 3;
+// Les lots de trois fois la même forme sont un biais de DÉBUT DE PARTIE. Les relevés faits sur
+// le jeu original portaient sur les 3 premières pièces, grille encore vide, et donnaient environ
+// un tiers de lots identiques ; en cours de partie le phénomène disparaît presque.
+// D'où deux probabilités distinctes plutôt qu'un taux unique : la grille vide, c'est-à-dire le
+// premier lot (ou après avoir entièrement vidé le plateau), déclenche le biais fort.
+const TRIPLE_CHANCE_EMPTY_GRID = 1 / 3;
+const TRIPLE_CHANCE_IN_PLAY = 0.03;
+
+function isGridEmpty(state) {
+    return state.grid.every((gridRow) => gridRow.every((cell) => cell === 0));
+}
+
+function tripleChance(state) {
+    if (!state) return TRIPLE_CHANCE_EMPTY_GRID;
+    return isGridEmpty(state) ? TRIPLE_CHANCE_EMPTY_GRID : TRIPLE_CHANCE_IN_PLAY;
+}
 
 // Le jeu original propose nettement plus souvent ses formes volumineuses que les autres, tant
 // que la grille a de quoi les accueillir. On leur donne donc un poids plus élevé au tirage.
@@ -152,7 +163,7 @@ function generatePieces(count, state = null) {
 
     // tiré une seule fois pour tout le lot : non nul, les trois pièces partagent cette forme
     const tripleShape =
-        Math.random() < TRIPLE_BATCH_CHANCE ? pickWeightedShape(shapeNames) : null;
+        Math.random() < tripleChance(state) ? pickWeightedShape(shapeNames) : null;
 
     return Array.from({ length: count }, () => ({
         id: `piece-${Math.random().toString(36).slice(2, 9)}`,
