@@ -48,13 +48,36 @@ function renderThemePicker() {
     });
 }
 
-function renderScore(state) {
+function renderScore(state, bestScore) {
     document.getElementById("score-display").textContent = `Score: ${state.score}`;
+    document.getElementById("best-score").textContent = `Record: ${bestScore}`;
 
     // le combo n'est affiché qu'à partir de 2 suppressions consécutives, quand il rapporte
     const comboEl = document.getElementById("combo-display");
     comboEl.textContent = state.combo > 1 ? `Combo x${state.combo}` : "";
     comboEl.classList.toggle("visible", state.combo > 1);
+}
+
+// durée de l'animation de suppression, doit rester alignée sur @keyframes clear-flash (style.css)
+const CLEAR_ANIMATION_MS = 450;
+
+// fait clignoter les cases des lignes qui viennent d'être supprimées. Les lignes concernées sont
+// calculées par la logique (getLinesClearedBy) AVANT la pose, puis transmises ici : l'affichage
+// ne devine rien, il anime ce qu'on lui désigne.
+function animateClearedLines(state, { rows, cols }) {
+    const cells = new Set();
+    rows.forEach((r) => {
+        for (let c = 0; c < state.size; c++) cells.add(gridCellAt(r, c));
+    });
+    cols.forEach((c) => {
+        for (let r = 0; r < state.size; r++) cells.add(gridCellAt(r, c));
+    });
+
+    cells.forEach((cellEl) => {
+        if (!cellEl) return;
+        cellEl.classList.add("just-cleared");
+        setTimeout(() => cellEl.classList.remove("just-cleared"), CLEAR_ANIMATION_MS);
+    });
 }
 
 function renderGameOver(state, onRestart) {
@@ -114,7 +137,7 @@ function computeDropOrigin(shapeName, hoverRow, hoverCol, offsetX, offsetY) {
     };
 }
 
-function renderPieceTray(state, onSelectPiece) {
+function renderPieceTray(state) {
     const container = document.getElementById("piece-tray");
     container.innerHTML = "";
 
@@ -129,9 +152,6 @@ function renderPieceTray(state, onSelectPiece) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "piece";
         pieceEl.draggable = true;
-        if (piece.id === state.selectedPieceId) {
-            pieceEl.classList.add("selected");
-        }
         pieceEl.style.gridTemplateColumns = `repeat(${cols}, 14px)`;
         pieceEl.style.gridTemplateRows = `repeat(${rows}, 14px)`;
 
@@ -145,8 +165,6 @@ function renderPieceTray(state, onSelectPiece) {
                 pieceEl.appendChild(cell);
             }
         }
-
-        pieceEl.addEventListener("click", () => onSelectPiece(piece.id));
 
         pieceEl.addEventListener("dragstart", (event) => {
             draggedPieceId = piece.id;

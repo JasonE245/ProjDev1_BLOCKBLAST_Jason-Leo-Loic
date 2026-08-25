@@ -7,6 +7,7 @@
 </head>
 <body>
 <div id="score-display"></div>
+<div id="best-score"></div>
 <div id="combo-display"></div>
 <div id="debug-indicator">MODE DEBUG</div>
 <div id="theme-toggle"></div>
@@ -29,23 +30,42 @@
     // Couche de contrôle : fait le pont entre la logique pure (game_logic.js) et l'affichage
     // (display.js), qui ne se connaissent pas. Chaque action suit le même cycle :
     // action -> nouvel état renvoyé par une fonction pure -> réaffichage complet depuis cet état.
+    // C'est aussi ici que vivent les effets de bord (localStorage), que game_logic.js s'interdit
+    // pour rester constitué de fonctions pures.
+    const BEST_SCORE_KEY = "blockblast-record";
+
     let state = createInitialState(8);
+    let bestScore = loadBestScore();
+
+    function loadBestScore() {
+        return Number(localStorage.getItem(BEST_SCORE_KEY)) || 0;
+    }
+
+    function saveBestScoreIfBeaten(score) {
+        if (score <= bestScore) return;
+        bestScore = score;
+        localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+    }
 
     function render() {
         renderGrid(state, handleDropPiece);
-        renderScore(state);
-        renderPieceTray(state, handleSelectPiece);
+        renderScore(state, bestScore);
+        renderPieceTray(state);
         renderGameOver(state, handleRestart);
     }
 
-    function handleSelectPiece(pieceId) {
-        state = selectPiece(state, pieceId);
-        render();
-    }
-
     function handleDropPiece(pieceId, row, col) {
+        // les lignes qui vont sauter sont demandées à la logique AVANT la pose : après, elles
+        // ont déjà disparu de la grille et l'affichage n'aurait plus rien à animer
+        const piece = state.pieces.find((p) => p.id === pieceId);
+        const cleared = piece
+            ? getLinesClearedBy(state, piece.shape, row, col)
+            : { rows: [], cols: [] };
+
         state = placePiece(state, pieceId, row, col);
+        saveBestScoreIfBeaten(state.score);
         render();
+        animateClearedLines(state, cleared);
     }
 
     function handleDebugToggle(row, col) {

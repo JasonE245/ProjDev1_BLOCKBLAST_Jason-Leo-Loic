@@ -101,7 +101,6 @@ function createInitialState(size = 8) {
         // sert à décider, en fin de lot, si le combo se maintient ou retombe à 0
         clearedDuringBatch: false,
         pieces: [],
-        selectedPieceId: null,
     };
     return { ...emptyState, pieces: generatePlayablePieces(emptyState, 3) };
 }
@@ -239,14 +238,6 @@ function isGameOver(state) {
     return !state.pieces.some((piece) => canPlaceAnywhere(state, piece.shape));
 }
 
-// renvoie un nouvel état avec la pièce désignée comme sélectionnée
-function selectPiece(state, pieceId) {
-    return {
-        ...state,
-        selectedPieceId: pieceId,
-    };
-}
-
 // bascule une case entre vide et remplie (bloc 1x1) ; réservé au mode debug pour tester
 // rapidement la suppression de lignes sans avoir à poser des pièces
 function toggleCell(state, row, col) {
@@ -285,7 +276,7 @@ function placePiece(state, pieceId, row, col) {
     const remainingPieces = state.pieces.filter((p) => p.id !== pieceId);
 
     const placedState = addPoints(
-        { ...state, grid, pieces: remainingPieces, selectedPieceId: null },
+        { ...state, grid, pieces: remainingPieces },
         SHAPES[piece.shape].length
     );
     const clearedState = clearFullLines(placedState);
