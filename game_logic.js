@@ -298,21 +298,43 @@ function placePiece(state, pieceId, row, col) {
     };
 }
 
+// index des lignes et colonnes entièrement remplies d'une grille
+function findFullLines(state) {
+    const { grid, size } = state;
+    const rows = [];
+    const cols = [];
+
+    for (let r = 0; r < size; r++) {
+        if (grid[r].every((cell) => cell !== 0)) rows.push(r);
+    }
+    for (let c = 0; c < size; c++) {
+        if (grid.every((gridRow) => gridRow[c] !== 0)) cols.push(c);
+    }
+    return { rows, cols };
+}
+
+// lignes et colonnes qui seraient supprimées si la forme était posée ici. Sert à l'aperçu au
+// survol : c'est la logique qui répond à la question, l'affichage se contente de colorier.
+// Renvoie des listes vides si le placement est invalide.
+function getLinesClearedBy(state, shapeName, row, col) {
+    if (!canPlacePiece(state, shapeName, row, col)) {
+        return { rows: [], cols: [] };
+    }
+
+    const grid = state.grid.map((gridRow) => [...gridRow]);
+    getShapeCells(shapeName, row, col).forEach(([r, c]) => {
+        grid[r][c] = 1;
+    });
+    return findFullLines({ ...state, grid });
+}
+
 // vide les lignes et colonnes entièrement remplies et ajoute les points correspondants
 // (voir lineClearScore). Le combo monte d'un cran à chaque suppression, mais une pose qui ne
 // supprime rien ne le fait PAS retomber : la remise à zéro se décide en fin de lot, dans
 // placePiece, si aucune des 3 pièces n'a supprimé de ligne.
 function clearFullLines(state) {
-    const { grid, size } = state;
-    const fullRows = [];
-    const fullCols = [];
-
-    for (let r = 0; r < size; r++) {
-        if (grid[r].every((cell) => cell !== 0)) fullRows.push(r);
-    }
-    for (let c = 0; c < size; c++) {
-        if (grid.every((gridRow) => gridRow[c] !== 0)) fullCols.push(c);
-    }
+    const { grid } = state;
+    const { rows: fullRows, cols: fullCols } = findFullLines(state);
 
     const linesCleared = fullRows.length + fullCols.length;
     if (linesCleared === 0) {

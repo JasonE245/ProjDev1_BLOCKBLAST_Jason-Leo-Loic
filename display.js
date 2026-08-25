@@ -169,19 +169,39 @@ function renderPieceTray(state, onSelectPiece) {
     });
 }
 
+function gridCellAt(row, col) {
+    return document.querySelector(`#grid .cell[data-row="${row}"][data-col="${col}"]`);
+}
+
 function showPlacementPreview(state, shapeName, row, col, valid) {
     clearPlacementPreview();
+
     getShapeCells(shapeName, row, col).forEach(([r, c]) => {
         if (r < 0 || r >= state.size || c < 0 || c >= state.size) return;
-        const cellEl = document.querySelector(`#grid .cell[data-row="${r}"][data-col="${c}"]`);
+        const cellEl = gridCellAt(r, c);
         if (cellEl) cellEl.classList.add(valid ? "preview-valid" : "preview-invalid");
+    });
+
+    if (!valid) return;
+
+    // met en évidence les lignes et colonnes que cette pose ferait sauter, la logique
+    // répondant à la question via getLinesClearedBy
+    const { rows, cols } = getLinesClearedBy(state, shapeName, row, col);
+
+    rows.forEach((r) => {
+        for (let c = 0; c < state.size; c++) gridCellAt(r, c)?.classList.add("preview-clear");
+    });
+    cols.forEach((c) => {
+        for (let r = 0; r < state.size; r++) gridCellAt(r, c)?.classList.add("preview-clear");
     });
 }
 
 function clearPlacementPreview() {
     document
-        .querySelectorAll("#grid .cell.preview-valid, #grid .cell.preview-invalid")
-        .forEach((cellEl) => cellEl.classList.remove("preview-valid", "preview-invalid"));
+        .querySelectorAll("#grid .cell.preview-valid, #grid .cell.preview-invalid, #grid .cell.preview-clear")
+        .forEach((cellEl) =>
+            cellEl.classList.remove("preview-valid", "preview-invalid", "preview-clear")
+        );
 }
 
 function renderGrid(state, onDropPiece) {

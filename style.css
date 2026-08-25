@@ -52,6 +52,15 @@ body {
     opacity: 0.5;
 }
 
+/* ligne ou colonne qui sauterait si la pièce était posée ici. Déclarée après preview-valid
+   et preview-invalid, à spécificité égale, pour l'emporter sur les cases de la pièce elle-même
+   qui tombent dans la ligne. Le blanc lumineux tranche sur les quatre thèmes. */
+.cell.preview-clear {
+    background: #ffffff;
+    opacity: 1;
+    box-shadow: 0 0 0 2px #ffffff, 0 0 14px rgba(255, 255, 255, 0.9);
+}
+
 #score-display {
     position: fixed;
     top: 16px;
