@@ -52,6 +52,39 @@ body {
     opacity: 0.5;
 }
 
+/* ligne ou colonne qui sauterait si la pièce était posée ici. Déclarée après preview-valid
+   et preview-invalid, à spécificité égale, pour l'emporter sur les cases de la pièce elle-même
+   qui tombent dans la ligne. Le blanc lumineux tranche sur les quatre thèmes. */
+.cell.preview-clear {
+    background: #ffffff;
+    opacity: 1;
+    box-shadow: 0 0 0 2px #ffffff, 0 0 14px rgba(255, 255, 255, 0.9);
+}
+
+/* éclair blanc sur les cases d'une ligne qui vient de sauter. La durée doit rester alignée
+   sur CLEAR_ANIMATION_MS dans display.js, qui retire la classe une fois l'animation finie. */
+.cell.just-cleared {
+    animation: clear-flash 450ms ease-out;
+}
+
+@keyframes clear-flash {
+    0% {
+        background: #ffffff;
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.95);
+        transform: scale(1.15);
+    }
+    60% {
+        background: #ffffff;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        transform: scale(1);
+    }
+    100% {
+        background: var(--cell-color);
+        box-shadow: none;
+        transform: scale(1);
+    }
+}
+
 #score-display {
     position: fixed;
     top: 16px;
@@ -64,9 +97,21 @@ body {
     font-weight: bold;
 }
 
+#best-score {
+    position: fixed;
+    top: 58px;
+    left: 16px;
+    padding: 4px 16px;
+    border-radius: 8px;
+    background: var(--grid-bg);
+    color: white;
+    opacity: 0.7;
+    font-size: 13px;
+}
+
 #combo-display {
     position: fixed;
-    top: 60px;
+    top: 96px;
     left: 16px;
     padding: 6px 14px;
     border-radius: 8px;
@@ -224,15 +269,10 @@ body.debug-mode #grid .cell {
     padding: 6px;
     border-radius: 6px;
     cursor: grab;
-    border: 2px solid transparent;
 }
 
 .piece:active {
     cursor: grabbing;
-}
-
-.piece.selected {
-    border-color: var(--filled-color);
 }
 
 .piece.dragging {

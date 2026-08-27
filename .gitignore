@@ -1,0 +1,7 @@
+# Configuration locale de l'IDE (WebStorm) : propre à chaque poste,
+# la committer écraserait celle des autres membres de l'équipe
+.idea/
+
+# Fichiers générés par le système
+.DS_Store
+Thumbs.db
