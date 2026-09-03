@@ -1,5 +1,4 @@
-// `pieces` fournit PIECE_COLOR_COUNT nuances de la même famille que `filled`,
-// utilisées pour distinguer les pièces posées sur la grille
+// `pieces` = PIECE_COLOR_COUNT nuances de `filled`, pour distinguer les pièces posées
 const themes = [
     {
         name: "mauve", bg: "#1e1e2e", grid: "#313244", cell: "#45475a", filled: "#89b4fa",
@@ -52,18 +51,17 @@ function renderScore(state, bestScore) {
     document.getElementById("score-display").textContent = `Score: ${state.score}`;
     document.getElementById("best-score").textContent = `Record: ${bestScore}`;
 
-    // le combo n'est affiché qu'à partir de 2 suppressions consécutives, quand il rapporte
+    // affiché seulement à partir de 2 suppressions d'affilée, quand il rapporte vraiment
     const comboEl = document.getElementById("combo-display");
     comboEl.textContent = state.combo > 1 ? `Combo x${state.combo}` : "";
     comboEl.classList.toggle("visible", state.combo > 1);
 }
 
-// durée de l'animation de suppression, doit rester alignée sur @keyframes clear-flash (style.css)
+// durée de l'animation, à garder alignée sur @keyframes clear-flash (style.css)
 const CLEAR_ANIMATION_MS = 450;
 
-// fait clignoter les cases des lignes qui viennent d'être supprimées. Les lignes concernées sont
-// calculées par la logique (getLinesClearedBy) AVANT la pose, puis transmises ici : l'affichage
-// ne devine rien, il anime ce qu'on lui désigne.
+// fait clignoter les cases des lignes qui viennent d'être supprimées (lignes calculées
+// AVANT la pose par getLinesClearedBy, puis transmises ici)
 function animateClearedLines(state, { rows, cols }) {
     const cells = new Set();
     rows.forEach((r) => {
@@ -90,13 +88,11 @@ function renderGameOver(state, onRestart) {
     document.getElementById("restart-button").onclick = onRestart;
 }
 
-// id de la pièce en cours de glisser-déposer ; état d'interaction transitoire propre à l'affichage,
-// distinct de l'état du jeu (jamais lu ni modifié par game_logic.js)
+// id de la pièce en cours de glisser-déposer ; état d'affichage transitoire, pas de l'état du jeu
 let draggedPieceId = null;
 
-// mode debug : taper "debug" n'importe où sur la page l'active/désactive (même principe que
-// l'easter egg "awesome" de YouTube). Une fois actif, cliquer une case de la grille appelle
-// onToggleCell(row, col) au lieu du glisser-déposer normal.
+// mode debug : taper "debug" n'importe où sur la page l'active/désactive. Une fois actif,
+// cliquer une case appelle onToggleCell(row, col) au lieu du glisser-déposer.
 const DEBUG_TRIGGER = "debug";
 
 function initDebugMode(onToggleCell) {
@@ -121,10 +117,8 @@ function initDebugMode(onToggleCell) {
 // doit correspondre à la taille de .cell dans style.css
 const CELL_SIZE = 40;
 
-// convertit la position pixel du curseur (case survolée + décalage à l'intérieur de celle-ci)
-// en la case d'origine (coin haut-gauche) de la forme, de façon à ce que la pièce apparaisse
-// centrée sous le curseur, comme l'image de glisser-déposer ; recalculé à chaque survol pour
-// suivre précisément le curseur plutôt que de figer un décalage fixe
+// convertit la position du curseur en case d'origine (coin haut-gauche) de la forme,
+// pour que la pièce paraisse centrée sous le curseur
 function computeDropOrigin(shapeName, hoverRow, hoverCol, offsetX, offsetY) {
     const shape = SHAPES[shapeName];
     const rows = Math.max(...shape.map(([r]) => r)) + 1;
@@ -202,8 +196,7 @@ function showPlacementPreview(state, shapeName, row, col, valid) {
 
     if (!valid) return;
 
-    // met en évidence les lignes et colonnes que cette pose ferait sauter, la logique
-    // répondant à la question via getLinesClearedBy
+    // met en évidence les lignes/colonnes que cette pose ferait sauter (getLinesClearedBy)
     const { rows, cols } = getLinesClearedBy(state, shapeName, row, col);
 
     rows.forEach((r) => {

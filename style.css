@@ -52,17 +52,14 @@ body {
     opacity: 0.5;
 }
 
-/* ligne ou colonne qui sauterait si la pièce était posée ici. Déclarée après preview-valid
-   et preview-invalid, à spécificité égale, pour l'emporter sur les cases de la pièce elle-même
-   qui tombent dans la ligne. Le blanc lumineux tranche sur les quatre thèmes. */
+/* ligne/colonne qui sauterait avec cette pose ; déclarée après preview-valid/-invalid pour gagner */
 .cell.preview-clear {
     background: #ffffff;
     opacity: 1;
     box-shadow: 0 0 0 2px #ffffff, 0 0 14px rgba(255, 255, 255, 0.9);
 }
 
-/* éclair blanc sur les cases d'une ligne qui vient de sauter. La durée doit rester alignée
-   sur CLEAR_ANIMATION_MS dans display.js, qui retire la classe une fois l'animation finie. */
+/* éclair blanc sur une ligne qui vient de sauter ; durée alignée sur CLEAR_ANIMATION_MS (display.js) */
 .cell.just-cleared {
     animation: clear-flash 450ms ease-out;
 }
