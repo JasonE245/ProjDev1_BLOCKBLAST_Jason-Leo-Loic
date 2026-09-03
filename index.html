@@ -27,11 +27,9 @@
 <script src="game_logic.js"></script>
 <script src="display.js"></script>
 <script>
-    // Couche de contrôle : fait le pont entre la logique pure (game_logic.js) et l'affichage
-    // (display.js), qui ne se connaissent pas. Chaque action suit le même cycle :
-    // action -> nouvel état renvoyé par une fonction pure -> réaffichage complet depuis cet état.
-    // C'est aussi ici que vivent les effets de bord (localStorage), que game_logic.js s'interdit
-    // pour rester constitué de fonctions pures.
+    // Couche de contrôle : relie la logique pure (game_logic.js) à l'affichage (display.js).
+    // Cycle : action -> nouvel état -> réaffichage complet. Les effets de bord (localStorage)
+    // vivent ici, jamais dans game_logic.js.
     const BEST_SCORE_KEY = "blockblast-record";
 
     let state = createInitialState(8);
@@ -55,8 +53,7 @@
     }
 
     function handleDropPiece(pieceId, row, col) {
-        // les lignes qui vont sauter sont demandées à la logique AVANT la pose : après, elles
-        // ont déjà disparu de la grille et l'affichage n'aurait plus rien à animer
+        // calculé AVANT la pose, sinon les lignes ont déjà disparu et il n'y a plus rien à animer
         const piece = state.pieces.find((p) => p.id === pieceId);
         const cleared = piece
             ? getLinesClearedBy(state, piece.shape, row, col)

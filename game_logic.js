@@ -1,10 +1,6 @@
-// formes définies en coordonnées [ligne, colonne] relatives, coin haut-gauche à (0,0).
-// Reflète les formes confirmées présentes dans le jeu original (captures d'écran) : les 7
-// tétrominos, trominos, dominos, bloc simple, lignes de 4/5, carrés, grand L, et diagonales
-// de 2/3 cases. Chaque forme est déclinée dans toutes ses orientations distinctes (les formes
-// symétriques sous rotation, comme les carrés, n'ont qu'une seule variante). Les cases d'une
-// forme n'ont pas besoin d'être adjacentes par un côté : getShapeCells/canPlacePiece ne font
-// aucune hypothèse d'adjacence, ce qui permet aux diagonales de fonctionner sans code spécifique.
+// Formes en coordonnées [ligne, colonne], relatives au coin haut-gauche (0,0).
+// Toutes les orientations du jeu original. Les cases n'ont pas besoin d'être
+// adjacentes, ce qui permet les diagonales sans code particulier.
 const SHAPES = {
     bloc: [[0, 0]],
 
@@ -54,29 +50,20 @@ const SHAPES = {
     grand_l_180: [[0, 0], [0, 1], [0, 2], [1, 2], [2, 2]],
     grand_l_270: [[0, 2], [1, 2], [2, 0], [2, 1], [2, 2]],
 
-    // deux orientations possibles pour une diagonale : "/" et "\"
+    // diagonales "/" et "\"
     diagonale_2_0: [[0, 1], [1, 0]],
     diagonale_2_90: [[0, 0], [1, 1]],
     diagonale_3_0: [[0, 2], [1, 1], [2, 0]],
     diagonale_3_90: [[0, 0], [1, 1], [2, 2]],
 };
 
-// nombre de couleurs disponibles dans la palette du thème actif (voir themes[].pieces dans display.js)
+// nb de couleurs de la palette active (voir themes[].pieces dans display.js)
 const PIECE_COLOR_COUNT = 4;
 
-// Barème de score, approximation du jeu original déduite de mesures en jeu (non officielle) :
-//
+// Barème de score (approximation non officielle du jeu original) :
 //   score = 30 * L! * min(combo + 1, 6 * L)
-//
-// où L est le nombre de lignes/colonnes cassées d'un seul coup et `combo` le nombre de
-// suppressions consécutives précédentes (le multiplicateur vaut donc 1 à la première
-// suppression, 2 à la deuxième d'affilée, etc., et plafonne à 6 * L).
-//
-// La factorielle rend les suppressions multiples très rentables :
-// bases à combo 0 -> L=1: 30, L=2: 60, L=3: 180, L=4: 720, L=5: 3600.
-//
-// Non couvert : le bonus "board clear" (grille entièrement vidée), qui semble additif et
-// variable (observé entre +525 et +4646), sans motif identifié pour l'instant.
+// L = lignes/colonnes cassées d'un coup, combo = suppressions d'affilée précédentes.
+// Non couvert : le bonus "board clear" (grille vidée), variable et pas encore compris.
 const BASE_LINE_POINTS = 30;
 const COMBO_CAP_PER_LINE = 6;
 
@@ -97,8 +84,7 @@ function createInitialState(size = 8) {
         grid: Array.from({ length: size }, () => Array(size).fill(0)),
         score: 0,
         combo: 0,
-        // vrai dès qu'une ligne a été supprimée pendant le lot de 3 pièces en cours ;
-        // sert à décider, en fin de lot, si le combo se maintient ou retombe à 0
+        // vrai dès qu'une ligne saute dans le lot en cours ; décide en fin de lot si le combo tient
         clearedDuringBatch: false,
         pieces: [],
     };
@@ -113,11 +99,8 @@ function addPoints(state, points) {
     };
 }
 
-// Les lots de trois fois la même forme sont un biais de DÉBUT DE PARTIE. Les relevés faits sur
-// le jeu original portaient sur les 3 premières pièces, grille encore vide, et donnaient environ
-// un tiers de lots identiques ; en cours de partie le phénomène disparaît presque.
-// D'où deux probabilités distinctes plutôt qu'un taux unique : la grille vide, c'est-à-dire le
-// premier lot (ou après avoir entièrement vidé le plateau), déclenche le biais fort.
+// triplets identiques : fréquents sur le tout premier lot (grille vide), rares ensuite —
+// comme dans le jeu original
 const TRIPLE_CHANCE_EMPTY_GRID = 1 / 3;
 const TRIPLE_CHANCE_IN_PLAY = 0.03;
 
@@ -130,12 +113,8 @@ function tripleChance(state) {
     return isGridEmpty(state) ? TRIPLE_CHANCE_EMPTY_GRID : TRIPLE_CHANCE_IN_PLAY;
 }
 
-// Le jeu original propose nettement plus souvent ses formes volumineuses que les autres, tant
-// que la grille a de quoi les accueillir. On leur donne donc un poids plus élevé au tirage.
-// Le poids est réglé pour qu'environ la moitié des lots contiennent au moins une de ces formes,
-// ce qui les rend fréquentes sans être systématiques.
-// Aucun test sur la place restante n'est nécessaire : shapeNames ne contient déjà que les formes
-// posables, donc une grille qui se remplit les fait sortir du tirage d'elle-même.
+// poids plus fort pour les grosses formes, comme dans le jeu original : ~1 lot sur 2 en
+// contient une, tant que la grille a la place (shapeNames ne contient que des formes posables)
 const BIG_SHAPES = ["carre3", "rect_2x3", "rect_3x2"];
 const BIG_SHAPE_WEIGHT = 5;
 
@@ -151,16 +130,13 @@ function pickWeightedShape(shapeNames) {
     return shapeNames[shapeNames.length - 1];
 }
 
-// tire `count` pièces. Si un état est fourni, le tirage est restreint aux formes réellement
-// posables sur sa grille : c'est la contrainte de conception du projet, les pièces distribuées
-// doivent toujours permettre de continuer à jouer. Si plus aucune forme n'est posable, on tire
-// sans restriction et isGameOver détectera la fin de partie.
+// tire `count` pièces posables sur l'état donné, pour toujours pouvoir continuer à jouer
 function generatePieces(count, state = null) {
     const allShapes = Object.keys(SHAPES);
     const playable = state ? allShapes.filter((name) => canPlaceAnywhere(state, name)) : allShapes;
     const shapeNames = playable.length > 0 ? playable : allShapes;
 
-    // tiré une seule fois pour tout le lot : non nul, les trois pièces partagent cette forme
+    // tiré une fois pour tout le lot : si non nul, les 3 pièces partagent cette forme
     const tripleShape =
         Math.random() < tripleChance(state) ? pickWeightedShape(shapeNames) : null;
 
@@ -181,12 +157,11 @@ function canPlaceAnywhere(state, shapeName) {
     return false;
 }
 
-// nombre de lots tirés au hasard avant d'abandonner la garantie complète (voir generatePlayablePieces)
+// essais avant d'abandonner la garantie de lot posable (voir generatePlayablePieces)
 const MAX_BATCH_ATTEMPTS = 40;
 
-// renvoie la grille obtenue après avoir posé une forme et supprimé les lignes pleines.
-// Utilisé uniquement par la recherche de faisabilité : seule l'occupation des cases compte,
-// d'où le remplissage avec 1 sans se soucier de la couleur.
+// grille obtenue après avoir posé une forme et supprimé les lignes pleines (test de faisabilité,
+// la couleur n'a pas d'importance ici)
 function simulatePlacement(state, shapeName, row, col) {
     const grid = state.grid.map((gridRow) => [...gridRow]);
     getShapeCells(shapeName, row, col).forEach(([r, c]) => {
@@ -195,9 +170,8 @@ function simulatePlacement(state, shapeName, row, col) {
     return clearFullLines({ ...state, grid }).grid;
 }
 
-// vrai s'il existe un ordre et des positions permettant de poser TOUTES ces formes à la suite,
-// en tenant compte des lignes supprimées en cours de route qui libèrent de la place.
-// Recherche exhaustive avec retour en arrière : elle s'arrête dès qu'une solution est trouvée.
+// vrai s'il existe un ordre/emplacement pour poser TOUTES ces formes à la suite
+// (recherche exhaustive avec retour en arrière, s'arrête à la première solution trouvée)
 function canPlaceAllInSomeOrder(state, shapeNames) {
     if (shapeNames.length === 0) return true;
 
@@ -215,14 +189,8 @@ function canPlaceAllInSomeOrder(state, shapeNames) {
     });
 }
 
-// tire un lot dont les `count` pièces sont toutes plaçables à la suite : le joueur peut donc
-// toujours écouler le lot entier s'il joue bien. C'est ce qui fait reposer les défaites sur les
-// choix de placement (skill) plutôt que sur le tirage (chance).
-// La composition du lot elle-même n'est pas filtrée : les mesures faites sur le jeu original
-// montrent qu'il distribue volontiers trois fois la même forme, ou plusieurs grosses pièces
-// d'un coup. Seule la plaçabilité est garantie.
-// En dernier recours après MAX_BATCH_ATTEMPTS essais, on retombe sur un lot dont chaque pièce
-// est au moins plaçable individuellement.
+// tire un lot entièrement plaçable à la suite : les défaites viennent des choix de placement,
+// pas du tirage. En dernier recours, un lot où chaque pièce est au moins plaçable seule.
 function generatePlayablePieces(state, count) {
     for (let attempt = 0; attempt < MAX_BATCH_ATTEMPTS; attempt++) {
         const pieces = generatePieces(count, state);
@@ -238,17 +206,14 @@ function isGameOver(state) {
     return !state.pieces.some((piece) => canPlaceAnywhere(state, piece.shape));
 }
 
-// bascule une case entre vide et remplie (bloc 1x1) ; réservé au mode debug pour tester
-// rapidement la suppression de lignes sans avoir à poser des pièces
+// bascule une case vide/remplie ; utilisé par le mode debug pour tester les suppressions de ligne
 function toggleCell(state, row, col) {
     const grid = state.grid.map((gridRow) => [...gridRow]);
     grid[row][col] = grid[row][col] === 0 ? 1 : 0;
     return { ...state, grid };
 }
 
-// cellules absolues occupées par une forme dont le coin haut-gauche (case [0,0]) est posé en (row, col).
-// Le calcul de la case à passer ici pour que la pièce paraisse centrée sous le curseur est
-// un problème d'affichage (position du curseur en pixels) et se fait dans display.js.
+// cellules absolues occupées par une forme dont le coin haut-gauche est posé en (row, col)
 function getShapeCells(shapeName, row, col) {
     return SHAPES[shapeName].map(([r, c]) => [row + r, col + c]);
 }
@@ -259,9 +224,8 @@ function canPlacePiece(state, shapeName, row, col) {
     );
 }
 
-// pose la pièce si le placement est valide, ajoute des points, et déclenche la suppression
-// des lignes/colonnes pleines ; renvoie l'état inchangé si le placement est invalide.
-// Un nouveau lot de 3 pièces n'est tiré que lorsque les 3 pièces proposées ont toutes été posées.
+// pose la pièce, ajoute les points, supprime les lignes pleines ; état inchangé si invalide.
+// Un nouveau lot n'est tiré qu'une fois les 3 pièces posées.
 function placePiece(state, pieceId, row, col) {
     const piece = state.pieces.find((p) => p.id === pieceId);
     if (!piece || !canPlacePiece(state, piece.shape, row, col)) {
@@ -285,13 +249,10 @@ function placePiece(state, pieceId, row, col) {
         return clearedState;
     }
 
-    // Fin du lot : le combo ne retombe à 0 que si aucune des 3 pièces n'a supprimé de ligne.
-    // Une pose isolée sans suppression ne casse donc pas le combo tant qu'il reste des pièces
-    // dans le lot pour se rattraper.
+    // fin de lot : le combo ne retombe à 0 que si aucune des 3 pièces n'a supprimé de ligne
     const combo = clearedState.clearedDuringBatch ? clearedState.combo : 0;
 
-    // le nouveau lot est tiré après la suppression des lignes, pour que les pièces soient
-    // choisies en fonction de la grille telle qu'elle sera réellement affichée au joueur
+    // tiré après les suppressions, sur la grille telle qu'elle sera affichée au joueur
     return {
         ...clearedState,
         combo,
@@ -315,9 +276,8 @@ function findFullLines(state) {
     return { rows, cols };
 }
 
-// lignes et colonnes qui seraient supprimées si la forme était posée ici. Sert à l'aperçu au
-// survol : c'est la logique qui répond à la question, l'affichage se contente de colorier.
-// Renvoie des listes vides si le placement est invalide.
+// lignes/colonnes que cette pose ferait sauter (utilisé pour l'aperçu au survol) ;
+// listes vides si le placement est invalide
 function getLinesClearedBy(state, shapeName, row, col) {
     if (!canPlacePiece(state, shapeName, row, col)) {
         return { rows: [], cols: [] };
@@ -330,10 +290,8 @@ function getLinesClearedBy(state, shapeName, row, col) {
     return findFullLines({ ...state, grid });
 }
 
-// vide les lignes et colonnes entièrement remplies et ajoute les points correspondants
-// (voir lineClearScore). Le combo monte d'un cran à chaque suppression, mais une pose qui ne
-// supprime rien ne le fait PAS retomber : la remise à zéro se décide en fin de lot, dans
-// placePiece, si aucune des 3 pièces n'a supprimé de ligne.
+// vide les lignes pleines et ajoute les points (voir lineClearScore). Le combo monte ici,
+// mais ne redescend jamais dans cette fonction — ça se décide en fin de lot, dans placePiece.
 function clearFullLines(state) {
     const { grid } = state;
     const { rows: fullRows, cols: fullCols } = findFullLines(state);
