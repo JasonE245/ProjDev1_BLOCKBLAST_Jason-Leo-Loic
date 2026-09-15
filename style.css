@@ -1,12 +1,9 @@
 :root {
-    --bg-color: #1e1e2e;
-    --grid-bg: #313244;
-    --cell-color: #45475a;
-    --filled-color: #89b4fa;
-    --piece-color-0: #89b4fa;
-    --piece-color-1: #74c7ec;
-    --piece-color-2: #94e2d5;
-    --piece-color-3: #b4befe;
+    --couleur-fond: #1e1e2e;
+    --fond-grille: #313244;
+    --couleur-case: #45475a;
+    --couleur-pleine: #89b4fa;
+    --taille-case-piece: 14px;
 }
 
 body {
@@ -19,30 +16,64 @@ body {
     margin: 0;
     padding: 16px;
     box-sizing: border-box;
-    background: var(--bg-color);
+    background: var(--couleur-fond);
     color: white;
     font-family: sans-serif;
+    /* empêche la sélection du texte quand on glisse une pièce trop vite */
     user-select: none;
+}
+
+#entete {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#score {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+#record {
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+#combo {
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--couleur-pleine);
+    color: var(--couleur-fond);
+    font-size: 13px;
+    font-weight: bold;
+    /* invisible par défaut, l'affichage ajoute la classe "visible" à partir de 2 suppressions d'affilée */
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+#combo.visible {
+    opacity: 1;
 }
 
 #grille {
     display: grid;
     gap: 2px;
-    background: var(--grid-bg);
     padding: 8px;
+    background: var(--fond-grille);
     border-radius: 8px;
+    /* le nombre de lignes et de colonnes est posé par afficherGrille(), il dépend de la taille de la partie */
 }
 
-/* --cell-fill est posée case par case en JS ; les cases vides gardent la couleur de fond */
 .case {
-    width: var(--cell-size);
-    height: var(--cell-size);
+    width: var(--taille-case);
+    height: var(--taille-case);
     border-radius: 4px;
-    background: var(--cell-fill, var(--cell-color));
+    /* --remplissage-case est posée par colorerCase() sur les cases occupées ; les autres gardent la couleur de fond */
+    background: var(--remplissage-case, var(--couleur-case));
 }
 
 .case.apercu-valide {
-    background: var(--filled-color);
+    background: var(--couleur-pleine);
     opacity: 0.5;
 }
 
@@ -51,7 +82,9 @@ body {
     opacity: 0.5;
 }
 
-/* ligne/colonne qui sauterait avec cette pose ; déclarée après apercu-valide/-invalid pour gagner */
+/* ligne qui sauterait avec cette pose
+   déclarée après les deux aperçus ci-dessus pour passer devant, puisqu'elles ont la même importance pour le
+   navigateur et que c'est alors la dernière écrite qui gagne */
 .case.apercu-suppression {
     background: #ffffff;
     opacity: 1;
@@ -75,41 +108,53 @@ body {
         transform: scale(1);
     }
     100% {
-        background: var(--cell-color);
+        background: var(--couleur-case);
         box-shadow: none;
         transform: scale(1);
     }
 }
 
-#entete {
+#reserve {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
+    padding: 12px 20px;
+    background: var(--fond-grille);
+    border-radius: 8px;
 }
 
-#score {
-    font-size: 18px;
-    font-weight: bold;
+/* taille fixe pour que la réserve ne saute pas d'un lot à l'autre selon la taille des formes */
+.emplacement-piece {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96px;
+    height: 96px;
 }
 
-#record {
-    font-size: 13px;
-    opacity: 0.7;
+.piece {
+    display: grid;
+    gap: 2px;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: grab;
 }
 
-#combo {
-    padding: 4px 12px;
-    border-radius: 999px;
-    background: var(--filled-color);
-    color: var(--bg-color);
-    font-size: 13px;
-    font-weight: bold;
-    opacity: 0;
-    transition: opacity 0.2s;
+.piece:active {
+    cursor: grabbing;
 }
 
-#combo.visible {
-    opacity: 1;
+/* la pièce d'origine s'efface pendant qu'on promène sa copie sur la grille */
+.piece.en-glissement {
+    opacity: 0.35;
+}
+
+.case-piece {
+    width: var(--taille-case-piece);
+    height: var(--taille-case-piece);
+    border-radius: 2px;
+    /* les cases du rectangle qui ne font pas partie de la forme restent transparentes */
+    background: var(--remplissage-case, transparent);
 }
 
 #fin-de-partie {
@@ -128,7 +173,7 @@ body {
 #boite-fin {
     padding: 32px 48px;
     border-radius: 12px;
-    background: var(--grid-bg);
+    background: var(--fond-grille);
     text-align: center;
 }
 
@@ -147,19 +192,60 @@ body {
     margin: 8px 0 24px;
     font-size: 40px;
     font-weight: bold;
-    color: var(--filled-color);
+    color: var(--couleur-pleine);
 }
 
 #bouton-rejouer {
     padding: 10px 28px;
     border: none;
     border-radius: 8px;
-    background: var(--filled-color);
-    color: var(--bg-color);
+    background: var(--couleur-pleine);
+    color: var(--couleur-fond);
     font-size: 16px;
     font-weight: bold;
     font-family: inherit;
     cursor: pointer;
+}
+
+#bouton-theme {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 2px solid var(--fond-grille);
+    border-radius: 6px;
+    background: var(--couleur-pleine);
+    cursor: pointer;
+}
+
+#panneau-themes {
+    position: fixed;
+    top: 52px;
+    right: 16px;
+    display: none;
+    gap: 8px;
+    padding: 8px;
+    background: var(--fond-grille);
+    border-radius: 8px;
+}
+
+#panneau-themes.ouvert {
+    display: flex;
+}
+
+.pastille-theme {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.pastille-theme:hover {
+    border-color: white;
 }
 
 #indicateur-debug {
@@ -182,85 +268,4 @@ body.mode-debug #indicateur-debug {
 
 body.mode-debug #grille .case {
     cursor: crosshair;
-}
-
-#bouton-theme {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 2px solid var(--grid-bg);
-    border-radius: 6px;
-    background: var(--filled-color);
-    cursor: pointer;
-}
-
-#panneau-themes {
-    position: fixed;
-    top: 52px;
-    right: 16px;
-    display: none;
-    gap: 8px;
-    padding: 8px;
-    background: var(--grid-bg);
-    border-radius: 8px;
-}
-
-#panneau-themes.ouvert {
-    display: flex;
-}
-
-.pastille-theme {
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: 2px solid transparent;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.pastille-theme:hover {
-    border-color: white;
-}
-
-#reserve {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 20px;
-    background: var(--grid-bg);
-    border-radius: 8px;
-}
-
-.emplacement-piece {
-    width: 96px;
-    height: 96px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.piece {
-    display: grid;
-    gap: 2px;
-    padding: 6px;
-    border-radius: 6px;
-    cursor: grab;
-}
-
-.piece:active {
-    cursor: grabbing;
-}
-
-.piece.en-glissement {
-    opacity: 0.35;
-}
-
-.case-piece {
-    width: 14px;
-    height: 14px;
-    border-radius: 2px;
-    background: var(--cell-fill, transparent);
 }

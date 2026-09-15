@@ -1,8 +1,7 @@
-// Formes en coordonnées [ligne, colonne], relatives au coin haut-gauche (0, 0).
-// Toute forme touche la ligne 0 et la colonne 0, ce qui permet de calculer sa taille
-// avec un simple maximum. Les cases n'ont pas besoin d'être adjacentes, ce qui donne
-// les diagonales sans code particulier.
-// Les tailles sont notées lignes x colonnes, comme les coordonnées.
+// définition des formes, en coordonnées [ligne, colonne] à partir du coin haut-gauche (0, 0)
+// toute forme touche la ligne 0 et la colonne 0 : c'est ce qui permet de calculer sa taille avec un simple maximum
+// les cases n'ont pas besoin d'être collées, ce qui donne les diagonales sans code particulier
+// les tailles sont notées lignes x colonnes, comme les coordonnées
 const FORMES = {
     bloc: [[0, 0]],
 
@@ -56,279 +55,383 @@ const FORMES = {
     diagonale3_descendante: [[0, 0], [1, 1], [2, 2]],
 };
 
-// Barème de score (approximation non officielle du jeu original) :
-//   score = 30 * L! * min(combo + 1, 6 * L)
-// L = lignes/colonnes cassées d'un coup, combo = suppressions d'affilée précédentes.
-// Non couvert : le bonus "board clear" (grille vidée), variable et pas encore compris.
-const POINTS_PAR_LIGNE = 30;
-const PLAFOND_COMBO_PAR_LIGNE = 6;
+// nombre de pièces proposées au joueur en même temps
+const PIECES_PAR_LOT = 3;
 
-// Une pièce casse au plus 6 lignes d'un coup : 5 lignes + 1 colonne avec une ligne5,
-// 3 + 3 avec un carré 3x3. La borne évite que la factorielle s'emballe si une forme
-// plus grosse était ajoutée un jour.
-const MAX_LIGNES_COMPTEES = 6;
-
-function factorielle(n) {
-    let resultat = 1;
-    for (let i = 2; i <= n; i++) resultat *= i;
-    return resultat;
+function etatAvec(etat, changements) {
+    return { ...etat, ...changements };
 }
 
-function pointsDeSuppression(nbLignes, combo) {
-    const lines = Math.min(nbLignes, MAX_LIGNES_COMPTEES);
-    const multiplicateur = Math.min(combo + 1, PLAFOND_COMBO_PAR_LIGNE * lines);
-    return POINTS_PAR_LIGNE * factorielle(lines) * multiplicateur;
-}
+function casesDeLaForme(forme, ligne, colonne) {
+    const cases = [];
 
-function creerEtatInitial(taille = 8, nbCouleurs = 4) {
-    const etatVide = {
-        taille,
-        nbCouleurs,
-        grille: Array.from({ length: taille }, () => Array(taille).fill(0)),
-        score: 0,
-        combo: 0,
-        // vrai dès qu'une ligne saute dans le lot en cours ; décide en fin de lot si le combo tient
-        ligneCasseeDansLeLot: false,
-        pieces: [],
-    };
-    return { ...etatVide, pieces: tirerLotPosable(etatVide, 3) };
-}
-
-// renvoie un nouvel état avec le score augmenté, ne modifie jamais l'état reçu
-function ajouterPoints(etat, points) {
-    return {
-        ...etat,
-        score: etat.score + points,
-    };
-}
-
-// triplets identiques : fréquents sur le tout premier lot (grille vide), rares ensuite —
-// comme dans le jeu original
-const CHANCE_TRIPLE_GRILLE_VIDE = 1 / 3;
-const CHANCE_TRIPLE_EN_JEU = 0.03;
-
-function grilleEstVide(etat) {
-    return etat.grille.every((ligneGrille) => ligneGrille.every((caseCourante) => caseCourante === 0));
-}
-
-function chanceTriple(etat) {
-    if (!etat) return CHANCE_TRIPLE_GRILLE_VIDE;
-    return grilleEstVide(etat) ? CHANCE_TRIPLE_GRILLE_VIDE : CHANCE_TRIPLE_EN_JEU;
-}
-
-// poids plus fort pour les grosses formes, comme dans le jeu original : ~1 lot sur 2 en
-// contient une, tant que la grille a la place (shapeNames ne contient que des formes posables)
-const GROSSES_FORMES = ["carre_3x3", "rect_2x3", "rect_3x2"];
-const POIDS_GROSSE_FORME = 5;
-
-function tirerFormePonderee(formes) {
-    const poidsDe = (nom) => (GROSSES_FORMES.includes(nom) ? POIDS_GROSSE_FORME : 1);
-    const total = formes.reduce((sum, nom) => sum + poidsDe(nom), 0);
-
-    let restant = Math.random() * total;
-    for (const nom of formes) {
-        restant -= poidsDe(nom);
-        if (restant < 0) return nom;
+    // chaque case de la forme est décalée du coin haut-gauche où on la pose
+    for (const [decalageLigne, decalageColonne] of FORMES[forme]) {
+        cases.push([ligne + decalageLigne, colonne + decalageColonne]);
     }
-    return formes[formes.length - 1];
+    return cases;
 }
 
-// tire `count` pièces posables sur l'état donné, pour toujours pouvoir continuer à jouer
-function creerPieces(nombre, etat = null) {
-    const toutesLesFormes = Object.keys(FORMES);
-    const posables = etat ? toutesLesFormes.filter((nom) => peutPoserQuelquePart(etat, nom)) : toutesLesFormes;
-    const formes = posables.length > 0 ? posables : toutesLesFormes;
+function tailleDeLaForme(forme) {
+    let maxLigne = 0;
+    let maxColonne = 0;
 
-    // tiré une fois pour tout le lot : si non nul, les 3 pièces partagent cette forme
-    const formeCommune =
-        Math.random() < chanceTriple(etat) ? tirerFormePonderee(formes) : null;
-
-    return Array.from({ length: nombre }, () => ({
-        id: `piece-${Math.random().toString(36).slice(2, 9)}`,
-        forme: formeCommune || tirerFormePonderee(formes),
-        couleur: Math.floor(Math.random() * etat.nbCouleurs),
-    }));
+    for (const [ligne, colonne] of FORMES[forme]) {
+        if (ligne > maxLigne) maxLigne = ligne;
+        if (colonne > maxColonne) maxColonne = colonne;
+    }
+    // +1 parce que les indices commencent à 0 : un indice maximum de 2 fait 3 cases
+    return { lignes: maxLigne + 1, colonnes: maxColonne + 1 };
 }
 
-// vrai s'il existe au moins une position de la grille où cette forme peut être posée
-function peutPoserQuelquePart(etat, forme) {
-    for (let ligne = 0; ligne < etat.taille; ligne++) {
-        for (let colonne = 0; colonne < etat.taille; colonne++) {
-            if (peutPoser(etat, forme, ligne, colonne)) return true;
+function creerGrilleVide(taille) {
+    const grille = [];
+
+    for (let ligne = 0; ligne < taille; ligne++) {
+        grille.push([]);
+        for (let colonne = 0; colonne < taille; colonne++) {
+            grille[ligne].push(0);
+        }
+    }
+    return grille;
+}
+
+function copierGrille(grille) {
+    const copie = [];
+
+    for (const ligne of grille) {
+        // slice() sans argument renvoie une copie de la ligne, et non la ligne elle-même
+        copie.push(ligne.slice());
+    }
+    return copie;
+}
+
+function grilleEstVide(grille) {
+    for (let ligne = 0; ligne < grille.length; ligne++) {
+        for (let colonne = 0; colonne < grille.length; colonne++) {
+            if (grille[ligne][colonne] !== 0) return false;
+        }
+    }
+    return true;
+}
+
+function grilleAvecForme(grille, forme, ligne, colonne, valeur) {
+    const nouvelle = copierGrille(grille);
+
+    for (const [l, c] of casesDeLaForme(forme, ligne, colonne)) {
+        nouvelle[l][c] = valeur;
+    }
+    return nouvelle;
+}
+
+function grilleSansLignes(grille, pleines) {
+    const taille = grille.length;
+    const nouvelle = copierGrille(grille);
+
+    // on vide chaque ligne pleine, de gauche à droite
+    for (const ligne of pleines.lignes) {
+        for (let colonne = 0; colonne < taille; colonne++) {
+            nouvelle[ligne][colonne] = 0;
+        }
+    }
+    // puis chaque colonne pleine, de haut en bas
+    for (const colonne of pleines.colonnes) {
+        for (let ligne = 0; ligne < taille; ligne++) {
+            nouvelle[ligne][colonne] = 0;
+        }
+    }
+    return nouvelle;
+}
+
+function lignePleine(grille, ligne) {
+    for (let colonne = 0; colonne < grille.length; colonne++) {
+        if (grille[ligne][colonne] === 0) return false;
+    }
+    return true;
+}
+
+function colonnePleine(grille, colonne) {
+    for (let ligne = 0; ligne < grille.length; ligne++) {
+        if (grille[ligne][colonne] === 0) return false;
+    }
+    return true;
+}
+
+function chercherLignesPleines(grille) {
+    const lignes = [];
+    const colonnes = [];
+
+    for (let ligne = 0; ligne < grille.length; ligne++) {
+        if (lignePleine(grille, ligne)) lignes.push(ligne);
+    }
+    for (let colonne = 0; colonne < grille.length; colonne++) {
+        if (colonnePleine(grille, colonne)) colonnes.push(colonne);
+    }
+    return { lignes, colonnes };
+}
+
+function peutPoser(grille, forme, ligne, colonne) {
+    const taille = grille.length;
+
+    for (const [l, c] of casesDeLaForme(forme, ligne, colonne)) {
+        // la case sort de la grille
+        if (l < 0 || l >= taille || c < 0 || c >= taille) return false;
+        // la case est déjà occupée
+        if (grille[l][c] !== 0) return false;
+    }
+    return true;
+}
+
+function peutPoserQuelquePart(grille, forme) {
+    for (let ligne = 0; ligne < grille.length; ligne++) {
+        for (let colonne = 0; colonne < grille.length; colonne++) {
+            if (peutPoser(grille, forme, ligne, colonne)) return true;
         }
     }
     return false;
 }
 
-// essais avant d'abandonner la garantie de lot posable (voir generatePlayablePieces)
-const MAX_ESSAIS_LOT = 40;
-
-// grille obtenue après avoir posé une forme et supprimé les lignes pleines (test de faisabilité,
-// la couleur n'a pas d'importance ici)
-function grilleApresPose(etat, forme, ligne, colonne) {
-    const grille = grilleAvecForme(etat.grille, forme, ligne, colonne, 1);
-    return supprimerLignesPleines({ ...etat, grille }).grille;
+function lignesCasseesPar(grille, forme, ligne, colonne) {
+    if (!peutPoser(grille, forme, ligne, colonne)) {
+        return { lignes: [], colonnes: [] };
+    }
+    // la couleur n'a aucune importance ici, on écrit 1 pour marquer les cases occupées
+    return chercherLignesPleines(grilleAvecForme(grille, forme, ligne, colonne, 1));
 }
 
-// vrai s'il existe un ordre/emplacement pour poser TOUTES ces formes à la suite
-// (recherche exhaustive avec retour en arrière, s'arrête à la première solution trouvée)
-function peutToutPoserDansUnOrdre(etat, formes) {
+function grilleApresPose(grille, forme, ligne, colonne) {
+    const remplie = grilleAvecForme(grille, forme, ligne, colonne, 1);
+    return grilleSansLignes(remplie, chercherLignesPleines(remplie));
+}
+
+// barème, approximation non officielle du jeu original :
+//      score = 30 x L! x min(combo + 1, 6 x L)
+// où L est le nombre de lignes et colonnes cassées du même coup, et combo le nombre de lots d'affilée qui ont cassé
+// une ligne. Non couvert : le bonus quand la grille se vide entièrement.
+const POINTS_PAR_LIGNE = 30;
+const PLAFOND_COMBO_PAR_LIGNE = 6;
+
+// une pièce casse au plus 6 lignes d'un coup : 5 lignes plus 1 colonne avec une ligne5, ou 3 plus 3 avec un carré 3x3
+// la borne évite que la factorielle s'emballe si une forme plus grosse était ajoutée un jour
+const MAX_LIGNES_COMPTEES = 6;
+
+function factorielle(n) {
+    let resultat = 1;
+
+    for (let i = 2; i <= n; i++) {
+        resultat *= i;
+    }
+    return resultat;
+}
+
+function pointsDeSuppression(nbLignes, combo) {
+    const lignes = Math.min(nbLignes, MAX_LIGNES_COMPTEES);
+    const multiplicateur = Math.min(combo + 1, PLAFOND_COMBO_PAR_LIGNE * lignes);
+
+    return POINTS_PAR_LIGNE * factorielle(lignes) * multiplicateur;
+}
+
+// un lot sur trois est composé de trois fois la même forme quand la grille est vide, contre 3 % en cours de partie
+// c'est le comportement du jeu original
+const CHANCE_TRIPLE_GRILLE_VIDE = 1 / 3;
+const CHANCE_TRIPLE_EN_JEU = 0.03;
+
+// les grosses formes sortent plus souvent, là aussi comme dans le jeu original
+const GROSSES_FORMES = ["carre_3x3", "rect_2x3", "rect_3x2"];
+const POIDS_GROSSE_FORME = 5;
+
+// nombre d'essais avant d'abandonner la garantie d'un lot entièrement posable
+const MAX_ESSAIS_LOT = 40;
+
+function construireSacDeFormes(formes) {
+    const sac = [];
+
+    for (const forme of formes) {
+        const exemplaires = GROSSES_FORMES.includes(forme) ? POIDS_GROSSE_FORME : 1;
+        for (let i = 0; i < exemplaires; i++) {
+            sac.push(forme);
+        }
+    }
+    return sac;
+}
+
+function tirerAuHasard(liste) {
+    return liste[Math.floor(Math.random() * liste.length)];
+}
+
+// numérotation des pièces : chaque pièce a besoin d'un identifiant unique pour que l'affichage sache laquelle est
+// glissée, et un simple compteur suffit
+let prochainNumeroDePiece = 1;
+
+function creerPieces(nombre, sac, nbCouleurs, chanceTriple) {
+    // tirée une fois pour tout le lot : si elle n'est pas nulle, toutes les pièces prennent cette forme
+    let formeCommune = null;
+    if (Math.random() < chanceTriple) {
+        formeCommune = tirerAuHasard(sac);
+    }
+
+    const pieces = [];
+    for (let i = 0; i < nombre; i++) {
+        pieces.push({
+            id: `piece-${prochainNumeroDePiece}`,
+            forme: formeCommune !== null ? formeCommune : tirerAuHasard(sac),
+            couleur: Math.floor(Math.random() * nbCouleurs),
+        });
+        prochainNumeroDePiece++;
+    }
+    return pieces;
+}
+
+function peutToutPoserDansUnOrdre(grille, formes) {
+    // plus rien à poser : toutes les formes ont trouvé leur place
     if (formes.length === 0) return true;
 
-    return formes.some((forme, index) => {
-        const restant = formes.filter((_, i) => i !== index);
+    const dejaEssayees = [];
 
-        for (let ligne = 0; ligne < etat.taille; ligne++) {
-            for (let colonne = 0; colonne < etat.taille; colonne++) {
-                if (!peutPoser(etat, forme, ligne, colonne)) continue;
-                const grilleSuivante = grilleApresPose(etat, forme, ligne, colonne);
-                if (peutToutPoserDansUnOrdre({ ...etat, grille: grilleSuivante }, restant)) return true;
+    for (let index = 0; index < formes.length; index++) {
+        const forme = formes[index];
+
+        // deux pièces identiques mèneraient exactement au même essai
+        if (dejaEssayees.includes(forme)) continue;
+        dejaEssayees.push(forme);
+
+        // ce qu'il restera à poser si on pose celle-ci maintenant
+        const restantes = formes.slice();
+        restantes.splice(index, 1);
+
+        for (let ligne = 0; ligne < grille.length; ligne++) {
+            for (let colonne = 0; colonne < grille.length; colonne++) {
+                if (!peutPoser(grille, forme, ligne, colonne)) continue;
+
+                const grilleSuivante = grilleApresPose(grille, forme, ligne, colonne);
+                if (peutToutPoserDansUnOrdre(grilleSuivante, restantes)) return true;
             }
         }
-        return false;
+    }
+
+    // aucune forme, à aucun endroit, ne mène à une solution
+    return false;
+}
+
+function tirerLotPosable(etat, nombre) {
+    const grille = etat.grille;
+
+    // formes qui rentrent encore quelque part, calculées une seule fois puisque la grille ne change pas entre
+    // deux essais
+    const posables = [];
+    for (const forme of Object.keys(FORMES)) {
+        if (peutPoserQuelquePart(grille, forme)) posables.push(forme);
+    }
+
+    const sac = construireSacDeFormes(posables.length > 0 ? posables : Object.keys(FORMES));
+    const chanceTriple = grilleEstVide(grille) ? CHANCE_TRIPLE_GRILLE_VIDE : CHANCE_TRIPLE_EN_JEU;
+
+    let pieces;
+    for (let essai = 0; essai < MAX_ESSAIS_LOT; essai++) {
+        pieces = creerPieces(nombre, sac, etat.nbCouleurs, chanceTriple);
+
+        const formes = [];
+        for (const piece of pieces) {
+            formes.push(piece.forme);
+        }
+        if (peutToutPoserDansUnOrdre(grille, formes)) return pieces;
+    }
+    return pieces;
+}
+
+function creerEtatInitial(taille = 8, nbCouleurs = 4) {
+    const etatVide = {
+        taille: taille,
+        nbCouleurs: nbCouleurs,
+        grille: creerGrilleVide(taille),
+        score: 0,
+        combo: 0,
+        // passe à true dès qu'une ligne saute dans le lot en cours, et décide en fin de lot si le combo est conservé
+        ligneCasseeDansLeLot: false,
+        pieces: [],
+    };
+    return etatAvec(etatVide, { pieces: tirerLotPosable(etatVide, PIECES_PAR_LOT) });
+}
+
+function trouverPiece(pieces, id) {
+    for (const piece of pieces) {
+        if (piece.id === id) return piece;
+    }
+    return null;
+}
+
+function supprimerLignesPleines(etat) {
+    const pleines = chercherLignesPleines(etat.grille);
+    const nbLignes = pleines.lignes.length + pleines.colonnes.length;
+
+    // rien de plein : l'état ne change pas
+    if (nbLignes === 0) return etat;
+
+    return etatAvec(etat, {
+        grille: grilleSansLignes(etat.grille, pleines),
+        score: etat.score + pointsDeSuppression(nbLignes, etat.combo),
+        combo: etat.combo + 1,
+        ligneCasseeDansLeLot: true,
     });
 }
 
-// tire un lot entièrement plaçable à la suite : les défaites viennent des choix de placement,
-// pas du tirage. En dernier recours, un lot où chaque pièce est au moins plaçable seule.
-function tirerLotPosable(etat, nombre) {
-    for (let essai = 0; essai < MAX_ESSAIS_LOT; essai++) {
-        const pieces = creerPieces(nombre, etat);
-        if (peutToutPoserDansUnOrdre(etat, pieces.map((piece) => piece.forme))) {
-            return pieces;
-        }
+function poserPiece(etat, idPiece, ligne, colonne) {
+    const piece = trouverPiece(etat.pieces, idPiece);
+    if (piece === null || !peutPoser(etat.grille, piece.forme, ligne, colonne)) {
+        return etat;
     }
-    return creerPieces(nombre, etat);
+
+    // la réserve sans la pièce qu'on vient de poser
+    const reserve = [];
+    for (const autre of etat.pieces) {
+        if (autre.id !== idPiece) reserve.push(autre);
+    }
+
+    // 1. la pièce est dessinée sur la grille et rapporte un point par case occupée
+    //    on écrit couleur + 1 parce que 0 est réservé aux cases vides
+    const posee = etatAvec(etat, {
+        grille: grilleAvecForme(etat.grille, piece.forme, ligne, colonne, piece.couleur + 1),
+        pieces: reserve,
+        score: etat.score + FORMES[piece.forme].length,
+    });
+
+    // 2. les lignes et colonnes devenues pleines sautent et rapportent leurs points
+    const nettoye = supprimerLignesPleines(posee);
+
+    // 3. il reste des pièces dans la réserve : le lot n'est pas fini, on s'arrête là
+    if (nettoye.pieces.length > 0) return nettoye;
+
+    // 4. fin de lot : le combo ne retombe à 0 que si aucune des 3 pièces n'a cassé de ligne
+    //    le lot suivant est tiré sur la grille telle qu'elle sera affichée au joueur
+    return etatAvec(nettoye, {
+        combo: nettoye.ligneCasseeDansLeLot ? nettoye.combo : 0,
+        ligneCasseeDansLeLot: false,
+        pieces: tirerLotPosable(nettoye, PIECES_PAR_LOT),
+    });
 }
 
-// fin de partie : aucune des pièces proposées ne peut être posée où que ce soit
 function partieTerminee(etat) {
-    return !etat.pieces.some((piece) => peutPoserQuelquePart(etat, piece.forme));
+    for (const piece of etat.pieces) {
+        if (peutPoserQuelquePart(etat.grille, piece.forme)) return false;
+    }
+    return true;
 }
 
-// bascule une case vide/remplie ; sert au mode debug pour préparer une situation à la main
 function basculerCase(etat, ligne, colonne) {
     const grille = copierGrille(etat.grille);
     grille[ligne][colonne] = grille[ligne][colonne] === 0 ? 1 : 0;
-    return { ...etat, grille };
+
+    return etatAvec(etat, { grille: grille });
 }
 
-// cellules absolues occupées par une forme dont le coin haut-gauche est posé en (row, col)
-function casesDeLaForme(forme, ligne, colonne) {
-    return FORMES[forme].map(([r, c]) => [ligne + r, colonne + c]);
-}
-
-// copie indépendante : écrire dans la copie ne touche pas l'originale
-function copierGrille(grille) {
-    return grille.map((ligneGrille) => [...ligneGrille]);
-}
-
-// copie de la grille avec la forme dessinée dessus, chaque case à `value`
-function grilleAvecForme(grille, forme, ligne, colonne, value) {
-    const next = copierGrille(grille);
-    casesDeLaForme(forme, ligne, colonne).forEach(([r, c]) => {
-        next[r][c] = value;
-    });
-    return next;
-}
-
-// copie de la grille avec les lignes et colonnes indiquées vidées
-function grilleSansLignes(grille, { lignes, colonnes }) {
-    const taille = grille.length;
-    const next = copierGrille(grille);
-
-    for (const ligne of lignes) {
-        for (let colonne = 0; colonne < taille; colonne++) next[ligne][colonne] = 0;
-    }
-    for (const colonne of colonnes) {
-        for (let ligne = 0; ligne < taille; ligne++) next[ligne][colonne] = 0;
-    }
-    return next;
-}
-
-function peutPoser(etat, forme, ligne, colonne) {
-    return casesDeLaForme(forme, ligne, colonne).every(
-        ([r, c]) => r >= 0 && r < etat.taille && c >= 0 && c < etat.taille && etat.grille[r][c] === 0
-    );
-}
-
-// pose la pièce, ajoute les points, supprime les lignes pleines ; état inchangé si invalide.
-// Un nouveau lot n'est tiré qu'une fois les 3 pièces posées.
-function poserPiece(etat, idPiece, ligne, colonne) {
-    const piece = etat.pieces.find((p) => p.id === idPiece);
-    if (!piece || !peutPoser(etat, piece.forme, ligne, colonne)) {
-        return etat;
-    }
-
-    const grille = grilleAvecForme(etat.grille, piece.forme, ligne, colonne, piece.couleur + 1);
-
-    const reserve = etat.pieces.filter((p) => p.id !== idPiece);
-
-    const etatPose = ajouterPoints(
-        { ...etat, grille, pieces: reserve },
-        FORMES[piece.forme].length
-    );
-    const etatNettoye = supprimerLignesPleines(etatPose);
-
-    if (etatNettoye.pieces.length > 0) {
-        return etatNettoye;
-    }
-
-    // fin de lot : le combo ne retombe à 0 que si aucune des 3 pièces n'a supprimé de ligne
-    const combo = etatNettoye.ligneCasseeDansLeLot ? etatNettoye.combo : 0;
-
-    // tiré après les suppressions, sur la grille telle qu'elle sera affichée au joueur
-    return {
-        ...etatNettoye,
-        combo,
-        ligneCasseeDansLeLot: false,
-        pieces: tirerLotPosable(etatNettoye, 3),
+// rend les fonctions accessibles aux tests exécutés avec Node
+// dans le navigateur la variable "module" n'existe pas, la ligne est donc simplement ignorée
+if (typeof module !== "undefined") {
+    module.exports = {
+        FORMES, GROSSES_FORMES, PIECES_PAR_LOT,
+        casesDeLaForme, tailleDeLaForme,
+        creerGrilleVide, copierGrille, chercherLignesPleines, peutPoser, peutPoserQuelquePart,
+        lignesCasseesPar, peutToutPoserDansUnOrdre, construireSacDeFormes,
+        pointsDeSuppression, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
     };
-}
-
-// index des lignes et colonnes entièrement remplies d'une grille
-function chercherLignesPleines(etat) {
-    const { grille, taille } = etat;
-    const lignes = [];
-    const colonnes = [];
-
-    for (let r = 0; r < taille; r++) {
-        if (grille[r].every((caseCourante) => caseCourante !== 0)) lignes.push(r);
-    }
-    for (let c = 0; c < taille; c++) {
-        if (grille.every((ligneGrille) => ligneGrille[c] !== 0)) colonnes.push(c);
-    }
-    return { lignes, colonnes };
-}
-
-// lignes/colonnes que cette pose ferait sauter (utilisé pour l'aperçu au survol) ;
-// listes vides si le placement est invalide
-function lignesCasseesPar(etat, forme, ligne, colonne) {
-    if (!peutPoser(etat, forme, ligne, colonne)) {
-        return { lignes: [], colonnes: [] };
-    }
-
-    const grille = grilleAvecForme(etat.grille, forme, ligne, colonne, 1);
-    return chercherLignesPleines({ ...etat, grille });
-}
-
-// vide les lignes pleines et ajoute les points (voir lineClearScore). Le combo monte ici,
-// mais ne redescend jamais dans cette fonction — ça se décide en fin de lot, dans placePiece.
-function supprimerLignesPleines(etat) {
-    const { grille } = etat;
-    const { lignes: lignesPleines, colonnes: colonnesPleines } = chercherLignesPleines(etat);
-
-    const nbLignes = lignesPleines.length + colonnesPleines.length;
-    if (nbLignes === 0) {
-        return etat;
-    }
-
-    const nouvelleGrille = grilleSansLignes(grille, { lignes: lignesPleines, colonnes: colonnesPleines });
-
-    const points = pointsDeSuppression(nbLignes, etat.combo);
-
-    return ajouterPoints(
-        { ...etat, grille: nouvelleGrille, combo: etat.combo + 1, ligneCasseeDansLeLot: true },
-        points
-    );
 }

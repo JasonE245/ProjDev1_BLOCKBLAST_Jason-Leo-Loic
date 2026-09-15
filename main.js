@@ -1,21 +1,15 @@
-// Couche de contrôle : relie la logique pure (game_logic.js) à l'affichage (display.js).
-// Cycle : action -> nouvel état -> réaffichage complet. Les effets de bord (localStorage)
-// vivent ici, jamais dans les deux autres fichiers.
+// côté de la grille de jeu
+const TAILLE_GRILLE = 8;
+
+// noms sous lesquels le navigateur retient le record et le thème choisi
 const CLE_RECORD = "blockblast-record";
 const CLE_THEME = "blockblast-theme";
 
-let etat = creerEtatInitial(8, NB_COULEURS_PIECES);
-let record = litRecord();
+// état de la partie en cours
+let etat = creerEtatInitial(TAILLE_GRILLE, NB_COULEURS_PIECES);
 
-function litRecord() {
-    return Number(localStorage.getItem(CLE_RECORD)) || 0;
-}
-
-function enregistreRecordSiBattu(score) {
-    if (score <= record) return;
-    record = score;
-    localStorage.setItem(CLE_RECORD, String(record));
-}
+// Number(null) vaut 0, et le "|| 0" couvre le cas où la valeur enregistrée ne serait pas un nombre
+let record = Number(localStorage.getItem(CLE_RECORD)) || 0;
 
 function afficherTout() {
     afficherGrille(etat);
@@ -25,16 +19,22 @@ function afficherTout() {
 }
 
 function surPosePiece(idPiece, ligne, colonne) {
-    // calculé AVANT la pose, sinon les lignes ont déjà disparu et il n'y a plus rien à animer
-    const piece = etat.pieces.find((p) => p.id === idPiece);
-    const cleared = piece
-        ? lignesCasseesPar(etat, piece.forme, ligne, colonne)
-        : { lignes: [], colonnes: [] };
+    const piece = trouverPiece(etat.pieces, idPiece);
+    if (piece === null) return;
+
+    // calculé AVANT la pose : après, les lignes ont déjà sauté et il n'y aurait plus rien à faire clignoter
+    const cassees = lignesCasseesPar(etat.grille, piece.forme, ligne, colonne);
 
     etat = poserPiece(etat, idPiece, ligne, colonne);
-    enregistreRecordSiBattu(etat.score);
+
+    // mise à jour du record, conservé pour les prochaines parties
+    if (etat.score > record) {
+        record = etat.score;
+        localStorage.setItem(CLE_RECORD, String(record));
+    }
+
     afficherTout();
-    animerLignesCassees(etat, cleared);
+    animerLignesCassees(etat, cassees);
 }
 
 function surBasculeCase(ligne, colonne) {
@@ -43,7 +43,7 @@ function surBasculeCase(ligne, colonne) {
 }
 
 function surRejouer() {
-    etat = creerEtatInitial(8, NB_COULEURS_PIECES);
+    etat = creerEtatInitial(TAILLE_GRILLE, NB_COULEURS_PIECES);
     afficherTout();
 }
 
@@ -52,13 +52,16 @@ function surChoixTheme(theme) {
     localStorage.setItem(CLE_THEME, theme.nom);
 }
 
-// on retrouve le thème choisi la dernière fois, et à défaut le premier de la liste
-const themeEnregistre = themes.find((t) => t.nom === localStorage.getItem(CLE_THEME));
-appliquerTheme(themeEnregistre || themes[0]);
-
-document.getElementById("bouton-rejouer").addEventListener("click", surRejouer);
+// on retrouve le thème choisi la dernière fois, et à défaut on prend le premier de la liste
+let themeEnregistre = null;
+for (const theme of themes) {
+    if (theme.nom === localStorage.getItem(CLE_THEME)) themeEnregistre = theme;
+}
+appliquerTheme(themeEnregistre !== null ? themeEnregistre : themes[0]);
 
 afficherChoixTheme(surChoixTheme);
 initInteractionsGrille(surPosePiece, surBasculeCase);
 initRaccourciDebug();
+document.getElementById("bouton-rejouer").addEventListener("click", surRejouer);
+
 afficherTout();
