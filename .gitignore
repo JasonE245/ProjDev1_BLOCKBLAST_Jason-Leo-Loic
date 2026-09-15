@@ -2,6 +2,9 @@
 # la committer écraserait celle des autres membres de l'équipe
 .idea/
 
+# Dépendances Node (le projet n'en a aucune, mais npm en crée au besoin)
+node_modules/
+
 # Fichiers générés par le système
 .DS_Store
 Thumbs.db
