@@ -37,7 +37,7 @@ function renderThemePicker(onSelect) {
     panel.innerHTML = "";
 
     themes.forEach((theme) => {
-        const swatch = document.createElement("div");
+        const swatch = document.createElement("button");
         swatch.className = "theme-swatch";
         swatch.style.background = theme.filled;
         swatch.title = theme.name;

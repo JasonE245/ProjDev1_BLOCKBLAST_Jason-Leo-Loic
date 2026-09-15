@@ -190,9 +190,10 @@ body.debug-mode #grid .cell {
     right: 16px;
     width: 28px;
     height: 28px;
+    padding: 0;
+    border: 2px solid var(--grid-bg);
     border-radius: 6px;
     background: var(--filled-color);
-    border: 2px solid var(--grid-bg);
     cursor: pointer;
 }
 
@@ -214,8 +215,9 @@ body.debug-mode #grid .cell {
 .theme-swatch {
     width: 24px;
     height: 24px;
-    border-radius: 6px;
+    padding: 0;
     border: 2px solid transparent;
+    border-radius: 6px;
     cursor: pointer;
 }
 
