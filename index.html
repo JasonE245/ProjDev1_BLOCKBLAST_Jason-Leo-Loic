@@ -31,6 +31,7 @@
     // Cycle : action -> nouvel état -> réaffichage complet. Les effets de bord (localStorage)
     // vivent ici, jamais dans game_logic.js.
     const BEST_SCORE_KEY = "blockblast-record";
+    const THEME_KEY = "blockblast-theme";
 
     let state = createInitialState(8, PIECE_COLOR_COUNT);
     let bestScore = loadBestScore();
@@ -75,7 +76,16 @@
         render();
     }
 
-    renderThemePicker();
+    function selectTheme(theme) {
+        applyTheme(theme);
+        localStorage.setItem(THEME_KEY, theme.name);
+    }
+
+    // on retrouve le thème choisi la dernière fois, et à défaut le premier de la liste
+    const savedTheme = themes.find((t) => t.name === localStorage.getItem(THEME_KEY));
+    applyTheme(savedTheme || themes[0]);
+
+    renderThemePicker(selectTheme);
     initDebugMode(handleDebugToggle);
     render();
 </script>

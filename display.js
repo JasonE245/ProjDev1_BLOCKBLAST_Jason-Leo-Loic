@@ -32,7 +32,7 @@ function applyTheme(theme) {
     });
 }
 
-function renderThemePicker() {
+function renderThemePicker(onSelect) {
     const panel = document.getElementById("theme-panel");
     panel.innerHTML = "";
 
@@ -41,7 +41,7 @@ function renderThemePicker() {
         swatch.className = "theme-swatch";
         swatch.style.background = theme.filled;
         swatch.title = theme.name;
-        swatch.addEventListener("click", () => applyTheme(theme));
+        swatch.addEventListener("click", () => onSelect(theme));
         panel.appendChild(swatch);
     });
 
