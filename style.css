@@ -55,7 +55,7 @@ body {
     box-shadow: 0 0 0 2px #ffffff, 0 0 14px rgba(255, 255, 255, 0.9);
 }
 
-/* éclair blanc sur une ligne qui vient de sauter ; durée alignée sur CLEAR_ANIMATION_MS (display.js) */
+/* éclair blanc sur une ligne qui vient de sauter */
 .cell.just-cleared {
     animation: clear-flash 450ms ease-out;
 }

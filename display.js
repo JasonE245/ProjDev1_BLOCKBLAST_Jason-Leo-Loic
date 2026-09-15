@@ -60,9 +60,6 @@ function renderScore(state, bestScore) {
     comboEl.classList.toggle("visible", state.combo > 1);
 }
 
-// durée de l'animation, à garder alignée sur @keyframes clear-flash (style.css)
-const CLEAR_ANIMATION_MS = 450;
-
 // fait clignoter les cases des lignes qui viennent d'être supprimées (lignes calculées
 // AVANT la pose par getLinesClearedBy, puis transmises ici)
 function animateClearedLines(state, { rows, cols }) {
@@ -77,7 +74,10 @@ function animateClearedLines(state, { rows, cols }) {
     cells.forEach((cellEl) => {
         if (!cellEl) return;
         cellEl.classList.add("just-cleared");
-        setTimeout(() => cellEl.classList.remove("just-cleared"), CLEAR_ANIMATION_MS);
+        // la durée est celle du CSS : il n'y a donc pas de valeur à garder synchronisée
+        cellEl.addEventListener("animationend", () => {
+            cellEl.classList.remove("just-cleared");
+        }, { once: true });
     });
 }
 
