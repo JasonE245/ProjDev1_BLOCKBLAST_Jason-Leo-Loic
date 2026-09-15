@@ -1,83 +1,54 @@
 <!DOCTYPE html>
+<!--
+    programme: Block Blast section page
+    par : Roux Loïc, Léo Del Duca, Jason Roger Marc Edmonds
+    créé le : 18.08.2026
+    Version: V.2.0
+    dernière modif: 10.09.2026
+    ============================================================================================================
+    Cette page ne contient que la structure. Tout est rempli par display.js : la grille, la réserve, le score et
+    les pastilles de thème sont des conteneurs vides au départ.
+-->
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Block Blast</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="score-display"></div>
-<div id="best-score"></div>
-<div id="combo-display"></div>
-<div id="debug-indicator">MODE DEBUG</div>
-<div id="theme-toggle"></div>
-<div id="theme-panel"></div>
-<div id="grid"></div>
-<div id="piece-tray"></div>
 
-<div id="game-over">
-    <div id="game-over-box">
+<!-- badge rouge visible uniquement quand le mode debug est actif -->
+<div id="indicateur-debug">MODE DEBUG</div>
+
+<!-- bouton en haut à droite, et panneau des quatre thèmes qu'il ouvre -->
+<button id="bouton-theme" type="button" title="Changer de thème"></button>
+<div id="panneau-themes"></div>
+
+<!-- score, record et combo -->
+<header id="entete">
+    <div id="score"></div>
+    <div id="record"></div>
+    <div id="combo"></div>
+</header>
+
+<!-- grille de jeu et réserve des trois pièces, remplies par display.js -->
+<div id="grille"></div>
+<div id="reserve"></div>
+
+<!-- écran de fin, caché tant que le joueur n'est pas bloqué -->
+<div id="fin-de-partie">
+    <div id="boite-fin">
         <h1>Partie terminée</h1>
         <p>Score final</p>
-        <div id="final-score">0</div>
-        <button id="restart-button">Rejouer</button>
+        <div id="score-final">0</div>
+        <button id="bouton-rejouer" type="button">Rejouer</button>
     </div>
 </div>
 
+<!-- l'ordre compte : les règles, puis l'affichage, puis le programme principal qui utilise les deux -->
 <script src="game_logic.js"></script>
 <script src="display.js"></script>
-<script>
-    // Couche de contrôle : relie la logique pure (game_logic.js) à l'affichage (display.js).
-    // Cycle : action -> nouvel état -> réaffichage complet. Les effets de bord (localStorage)
-    // vivent ici, jamais dans game_logic.js.
-    const BEST_SCORE_KEY = "blockblast-record";
-
-    let state = createInitialState(8);
-    let bestScore = loadBestScore();
-
-    function loadBestScore() {
-        return Number(localStorage.getItem(BEST_SCORE_KEY)) || 0;
-    }
-
-    function saveBestScoreIfBeaten(score) {
-        if (score <= bestScore) return;
-        bestScore = score;
-        localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
-    }
-
-    function render() {
-        renderGrid(state, handleDropPiece);
-        renderScore(state, bestScore);
-        renderPieceTray(state);
-        renderGameOver(state, handleRestart);
-    }
-
-    function handleDropPiece(pieceId, row, col) {
-        // calculé AVANT la pose, sinon les lignes ont déjà disparu et il n'y a plus rien à animer
-        const piece = state.pieces.find((p) => p.id === pieceId);
-        const cleared = piece
-            ? getLinesClearedBy(state, piece.shape, row, col)
-            : { rows: [], cols: [] };
-
-        state = placePiece(state, pieceId, row, col);
-        saveBestScoreIfBeaten(state.score);
-        render();
-        animateClearedLines(state, cleared);
-    }
-
-    function handleDebugToggle(row, col) {
-        state = toggleCell(state, row, col);
-        render();
-    }
-
-    function handleRestart() {
-        state = createInitialState(8);
-        render();
-    }
-
-    renderThemePicker();
-    initDebugMode(handleDebugToggle);
-    render();
-</script>
+<script src="main.js"></script>
 </body>
 </html>
