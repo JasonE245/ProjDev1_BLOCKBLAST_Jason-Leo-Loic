@@ -1,44 +1,44 @@
-// Formes en coordonnées [ligne, colonne], relatives au coin haut-gauche (0,0).
-// Toutes les orientations du jeu original. Les cases n'ont pas besoin d'être
-// adjacentes, ce qui permet les diagonales sans code particulier.
+// Formes en coordonnées [ligne, colonne], relatives au coin haut-gauche (0, 0).
+// Toute forme touche la ligne 0 et la colonne 0, ce qui permet de calculer sa taille
+// avec un simple maximum. Les cases n'ont pas besoin d'être adjacentes, ce qui donne
+// les diagonales sans code particulier.
+// Les tailles sont notées lignes x colonnes, comme les coordonnées.
 const SHAPES = {
     bloc: [[0, 0]],
 
-    domino_h: [[0, 0], [0, 1]],
-    domino_v: [[0, 0], [1, 0]],
-
-    tromino_ligne_h: [[0, 0], [0, 1], [0, 2]],
-    tromino_ligne_v: [[0, 0], [1, 0], [2, 0]],
-    tromino_coin_0: [[0, 0], [0, 1], [1, 0]],
-    tromino_coin_90: [[0, 0], [0, 1], [1, 1]],
-    tromino_coin_180: [[0, 1], [1, 0], [1, 1]],
-    tromino_coin_270: [[0, 0], [1, 0], [1, 1]],
-
-    carre: [[0, 0], [0, 1], [1, 0], [1, 1]],
-    carre3: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]],
-
-    rect_2x3: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]],
-    rect_3x2: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]],
-
+    ligne2_h: [[0, 0], [0, 1]],
+    ligne2_v: [[0, 0], [1, 0]],
+    ligne3_h: [[0, 0], [0, 1], [0, 2]],
+    ligne3_v: [[0, 0], [1, 0], [2, 0]],
     ligne4_h: [[0, 0], [0, 1], [0, 2], [0, 3]],
     ligne4_v: [[0, 0], [1, 0], [2, 0], [3, 0]],
     ligne5_h: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]],
     ligne5_v: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
 
+    coin_0: [[0, 0], [0, 1], [1, 0]],
+    coin_90: [[0, 0], [0, 1], [1, 1]],
+    coin_180: [[0, 1], [1, 0], [1, 1]],
+    coin_270: [[0, 0], [1, 0], [1, 1]],
+
+    carre_2x2: [[0, 0], [0, 1], [1, 0], [1, 1]],
+    carre_3x3: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]],
+    rect_2x3: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]],
+    rect_3x2: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]],
+
     l_0: [[0, 0], [1, 0], [2, 0], [2, 1]],
     l_90: [[0, 0], [0, 1], [0, 2], [1, 0]],
     l_180: [[0, 0], [0, 1], [1, 1], [2, 1]],
-    l_270: [[1, 0], [1, 1], [1, 2], [0, 2]],
+    l_270: [[0, 2], [1, 0], [1, 1], [1, 2]],
 
     j_0: [[0, 1], [1, 1], [2, 0], [2, 1]],
     j_90: [[0, 0], [1, 0], [1, 1], [1, 2]],
     j_180: [[0, 0], [0, 1], [1, 0], [2, 0]],
     j_270: [[0, 0], [0, 1], [0, 2], [1, 2]],
 
-    t_bas: [[0, 0], [0, 1], [0, 2], [1, 1]],
-    t_gauche: [[0, 1], [1, 0], [1, 1], [2, 1]],
-    t_haut: [[0, 1], [1, 0], [1, 1], [1, 2]],
-    t_droite: [[0, 0], [1, 0], [1, 1], [2, 0]],
+    t_0: [[0, 0], [0, 1], [0, 2], [1, 1]],
+    t_90: [[0, 1], [1, 0], [1, 1], [2, 1]],
+    t_180: [[0, 1], [1, 0], [1, 1], [1, 2]],
+    t_270: [[0, 0], [1, 0], [1, 1], [2, 0]],
 
     s_h: [[0, 1], [0, 2], [1, 0], [1, 1]],
     s_v: [[0, 0], [1, 0], [1, 1], [2, 1]],
@@ -50,11 +50,10 @@ const SHAPES = {
     grand_l_180: [[0, 0], [0, 1], [0, 2], [1, 2], [2, 2]],
     grand_l_270: [[0, 2], [1, 2], [2, 0], [2, 1], [2, 2]],
 
-    // diagonales "/" et "\"
-    diagonale_2_0: [[0, 1], [1, 0]],
-    diagonale_2_90: [[0, 0], [1, 1]],
-    diagonale_3_0: [[0, 2], [1, 1], [2, 0]],
-    diagonale_3_90: [[0, 0], [1, 1], [2, 2]],
+    diagonale2_montante: [[0, 1], [1, 0]],
+    diagonale2_descendante: [[0, 0], [1, 1]],
+    diagonale3_montante: [[0, 2], [1, 1], [2, 0]],
+    diagonale3_descendante: [[0, 0], [1, 1], [2, 2]],
 };
 
 // Barème de score (approximation non officielle du jeu original) :
@@ -119,7 +118,7 @@ function tripleChance(state) {
 
 // poids plus fort pour les grosses formes, comme dans le jeu original : ~1 lot sur 2 en
 // contient une, tant que la grille a la place (shapeNames ne contient que des formes posables)
-const BIG_SHAPES = ["carre3", "rect_2x3", "rect_3x2"];
+const BIG_SHAPES = ["carre_3x3", "rect_2x3", "rect_3x2"];
 const BIG_SHAPE_WEIGHT = 5;
 
 function pickWeightedShape(shapeNames) {
