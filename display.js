@@ -154,7 +154,7 @@ function renderPieceTray(state) {
                 const cell = document.createElement("div");
                 cell.className = "piece-cell";
                 if (shape.some(([r, c]) => r === row && c === col)) {
-                    cell.classList.add(`color-${piece.color}`);
+                    cell.style.setProperty("--cell-fill", `var(--piece-color-${piece.color})`);
                 }
                 pieceEl.appendChild(cell);
             }
@@ -230,7 +230,7 @@ function renderGrid(state, onDropPiece) {
 
             const cellValue = state.grid[row][col];
             if (cellValue !== 0) {
-                cell.classList.add(`color-${cellValue - 1}`);
+                cell.style.setProperty("--cell-fill", `var(--piece-color-${cellValue - 1})`);
             }
 
             cell.addEventListener("dragover", (event) => {

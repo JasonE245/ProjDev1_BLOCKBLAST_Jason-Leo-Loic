@@ -30,17 +30,13 @@ body {
     border-radius: 8px;
 }
 
+/* --cell-fill est posée case par case en JS ; les cases vides gardent la couleur de fond */
 .cell {
     width: 40px;
     height: 40px;
     border-radius: 4px;
-    background: var(--cell-color);
+    background: var(--cell-fill, var(--cell-color));
 }
-
-.cell.color-0 { background: var(--piece-color-0); }
-.cell.color-1 { background: var(--piece-color-1); }
-.cell.color-2 { background: var(--piece-color-2); }
-.cell.color-3 { background: var(--piece-color-3); }
 
 .cell.preview-valid {
     background: var(--filled-color);
@@ -280,9 +276,5 @@ body.debug-mode #grid .cell {
     width: 14px;
     height: 14px;
     border-radius: 2px;
+    background: var(--cell-fill, transparent);
 }
-
-.piece-cell.color-0 { background: var(--piece-color-0); }
-.piece-cell.color-1 { background: var(--piece-color-1); }
-.piece-cell.color-2 { background: var(--piece-color-2); }
-.piece-cell.color-3 { background: var(--piece-color-3); }
