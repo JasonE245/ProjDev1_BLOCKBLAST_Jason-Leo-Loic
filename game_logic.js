@@ -166,10 +166,7 @@ const MAX_BATCH_ATTEMPTS = 40;
 // grille obtenue après avoir posé une forme et supprimé les lignes pleines (test de faisabilité,
 // la couleur n'a pas d'importance ici)
 function simulatePlacement(state, shapeName, row, col) {
-    const grid = state.grid.map((gridRow) => [...gridRow]);
-    getShapeCells(shapeName, row, col).forEach(([r, c]) => {
-        grid[r][c] = 1;
-    });
+    const grid = gridWithShape(state.grid, shapeName, row, col, 1);
     return clearFullLines({ ...state, grid }).grid;
 }
 
@@ -211,7 +208,7 @@ function isGameOver(state) {
 
 // bascule une case vide/remplie ; sert au mode debug pour préparer une situation à la main
 function toggleCell(state, row, col) {
-    const grid = state.grid.map((gridRow) => [...gridRow]);
+    const grid = copyGrid(state.grid);
     grid[row][col] = grid[row][col] === 0 ? 1 : 0;
     return { ...state, grid };
 }
@@ -219,6 +216,34 @@ function toggleCell(state, row, col) {
 // cellules absolues occupées par une forme dont le coin haut-gauche est posé en (row, col)
 function getShapeCells(shapeName, row, col) {
     return SHAPES[shapeName].map(([r, c]) => [row + r, col + c]);
+}
+
+// copie indépendante : écrire dans la copie ne touche pas l'originale
+function copyGrid(grid) {
+    return grid.map((gridRow) => [...gridRow]);
+}
+
+// copie de la grille avec la forme dessinée dessus, chaque case à `value`
+function gridWithShape(grid, shapeName, row, col, value) {
+    const next = copyGrid(grid);
+    getShapeCells(shapeName, row, col).forEach(([r, c]) => {
+        next[r][c] = value;
+    });
+    return next;
+}
+
+// copie de la grille avec les lignes et colonnes indiquées vidées
+function gridWithoutLines(grid, { rows, cols }) {
+    const size = grid.length;
+    const next = copyGrid(grid);
+
+    for (const row of rows) {
+        for (let col = 0; col < size; col++) next[row][col] = 0;
+    }
+    for (const col of cols) {
+        for (let row = 0; row < size; row++) next[row][col] = 0;
+    }
+    return next;
 }
 
 function canPlacePiece(state, shapeName, row, col) {
@@ -235,10 +260,7 @@ function placePiece(state, pieceId, row, col) {
         return state;
     }
 
-    const grid = state.grid.map((gridRow) => [...gridRow]);
-    getShapeCells(piece.shape, row, col).forEach(([r, c]) => {
-        grid[r][c] = piece.color + 1;
-    });
+    const grid = gridWithShape(state.grid, piece.shape, row, col, piece.color + 1);
 
     const remainingPieces = state.pieces.filter((p) => p.id !== pieceId);
 
@@ -286,10 +308,7 @@ function getLinesClearedBy(state, shapeName, row, col) {
         return { rows: [], cols: [] };
     }
 
-    const grid = state.grid.map((gridRow) => [...gridRow]);
-    getShapeCells(shapeName, row, col).forEach(([r, c]) => {
-        grid[r][c] = 1;
-    });
+    const grid = gridWithShape(state.grid, shapeName, row, col, 1);
     return findFullLines({ ...state, grid });
 }
 
@@ -304,9 +323,7 @@ function clearFullLines(state) {
         return state;
     }
 
-    const newGrid = grid.map((gridRow, r) =>
-        gridRow.map((cell, c) => (fullRows.includes(r) || fullCols.includes(c) ? 0 : cell))
-    );
+    const newGrid = gridWithoutLines(grid, { rows: fullRows, cols: fullCols });
 
     const points = lineClearScore(linesCleared, state.combo);
 
