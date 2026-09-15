@@ -209,7 +209,7 @@ function isGameOver(state) {
     return !state.pieces.some((piece) => canPlaceAnywhere(state, piece.shape));
 }
 
-// bascule une case vide/remplie ; utilisé par le mode debug pour tester les suppressions de ligne
+// bascule une case vide/remplie ; sert au mode debug pour préparer une situation à la main
 function toggleCell(state, row, col) {
     const grid = state.grid.map((gridRow) => [...gridRow]);
     grid[row][col] = grid[row][col] === 0 ? 1 : 0;
