@@ -1,3 +1,16 @@
+// programme: Block Blast section logique
+// par : Roux Loïc, Léo Del Duca, Jason Roger Marc Edmonds
+// créé le : 18.08.2026
+// Version: V.2.0
+// dernière modif: 10.09.2026
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Ce fichier contient les règles du jeu. Aucune fonction ici ne touche à l'affichage.
+//
+// Règle du fichier : on ne modifie jamais l'état ni la grille qu'on reçoit, on en fabrique une copie modifiée.
+// C'est le rôle de la fonction etatAvec(). L'ancien état reste donc intact, ce qui permet par exemple de comparer
+// l'avant et l'après d'un coup (voir surPosePiece dans main.js).
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // définition des formes, en coordonnées [ligne, colonne] à partir du coin haut-gauche (0, 0)
 // toute forme touche la ligne 0 et la colonne 0 : c'est ce qui permet de calculer sa taille avec un simple maximum
 // les cases n'ont pas besoin d'être collées, ce qui donne les diagonales sans code particulier
@@ -58,10 +71,32 @@ const FORMES = {
 // nombre de pièces proposées au joueur en même temps
 const PIECES_PAR_LOT = 3;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// outils sur l'état
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * fabrique une copie de l'état avec certains champs remplacés
+ * c'est le seul endroit du programme où l'on utilise "..." : partout ailleurs on passe par cette fonction
+ * :param etat: l'état de départ, qui n'est jamais modifié
+ * :param changements: objet contenant uniquement les champs à remplacer
+ * :return: un nouvel état, copie du premier avec les changements appliqués
+ */
 function etatAvec(etat, changements) {
     return { ...etat, ...changements };
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// formes
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * calcule les cases réellement occupées par une forme posée à un endroit donné
+ * :param forme: nom de la forme, tel qu'il apparaît dans FORMES
+ * :param ligne: ligne du coin haut-gauche de la forme
+ * :param colonne: colonne du coin haut-gauche de la forme
+ * :return: liste de couples [ligne, colonne] en coordonnées de la grille
+ */
 function casesDeLaForme(forme, ligne, colonne) {
     const cases = [];
 
@@ -72,6 +107,12 @@ function casesDeLaForme(forme, ligne, colonne) {
     return cases;
 }
 
+/**
+ * calcule la taille du rectangle qui contient la forme
+ * comme toute forme touche la ligne 0 et la colonne 0, le plus grand indice suffit
+ * :param forme: nom de la forme, tel qu'il apparaît dans FORMES
+ * :return: un objet {lignes, colonnes}
+ */
 function tailleDeLaForme(forme) {
     let maxLigne = 0;
     let maxColonne = 0;
@@ -84,6 +125,15 @@ function tailleDeLaForme(forme) {
     return { lignes: maxLigne + 1, colonnes: maxColonne + 1 };
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// grille
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * fabrique une grille carrée entièrement vide
+ * :param taille: nombre de lignes, qui est aussi le nombre de colonnes
+ * :return: un tableau de tableaux ne contenant que des 0
+ */
 function creerGrilleVide(taille) {
     const grille = [];
 
@@ -96,6 +146,12 @@ function creerGrilleVide(taille) {
     return grille;
 }
 
+/**
+ * fabrique une copie indépendante de la grille
+ * sans cette copie, écrire dans la nouvelle grille modifierait aussi l'ancienne
+ * :param grille: la grille à copier
+ * :return: une nouvelle grille de mêmes valeurs
+ */
 function copierGrille(grille) {
     const copie = [];
 
@@ -106,6 +162,11 @@ function copierGrille(grille) {
     return copie;
 }
 
+/**
+ * vérifie si la grille ne contient plus aucune case occupée
+ * :param grille: la grille à vérifier
+ * :return: true si toutes les cases valent 0, sinon false
+ */
 function grilleEstVide(grille) {
     for (let ligne = 0; ligne < grille.length; ligne++) {
         for (let colonne = 0; colonne < grille.length; colonne++) {
@@ -115,6 +176,15 @@ function grilleEstVide(grille) {
     return true;
 }
 
+/**
+ * fabrique une copie de la grille avec une forme dessinée dessus
+ * :param grille: la grille de départ, qui n'est pas modifiée
+ * :param forme: nom de la forme à dessiner
+ * :param ligne: ligne du coin haut-gauche
+ * :param colonne: colonne du coin haut-gauche
+ * :param valeur: valeur à écrire dans les cases de la forme (0 = vide, 1 à 4 = couleur)
+ * :return: une nouvelle grille
+ */
 function grilleAvecForme(grille, forme, ligne, colonne, valeur) {
     const nouvelle = copierGrille(grille);
 
@@ -124,6 +194,12 @@ function grilleAvecForme(grille, forme, ligne, colonne, valeur) {
     return nouvelle;
 }
 
+/**
+ * fabrique une copie de la grille où les lignes et colonnes indiquées sont vidées
+ * :param grille: la grille de départ, qui n'est pas modifiée
+ * :param pleines: objet {lignes, colonnes} contenant les index à vider
+ * :return: une nouvelle grille
+ */
 function grilleSansLignes(grille, pleines) {
     const taille = grille.length;
     const nouvelle = copierGrille(grille);
@@ -143,6 +219,12 @@ function grilleSansLignes(grille, pleines) {
     return nouvelle;
 }
 
+/**
+ * vérifie si une ligne de la grille est entièrement occupée
+ * :param grille: la grille à vérifier
+ * :param ligne: index de la ligne
+ * :return: true si aucune case de la ligne ne vaut 0, sinon false
+ */
 function lignePleine(grille, ligne) {
     for (let colonne = 0; colonne < grille.length; colonne++) {
         if (grille[ligne][colonne] === 0) return false;
@@ -150,6 +232,12 @@ function lignePleine(grille, ligne) {
     return true;
 }
 
+/**
+ * vérifie si une colonne de la grille est entièrement occupée
+ * :param grille: la grille à vérifier
+ * :param colonne: index de la colonne
+ * :return: true si aucune case de la colonne ne vaut 0, sinon false
+ */
 function colonnePleine(grille, colonne) {
     for (let ligne = 0; ligne < grille.length; ligne++) {
         if (grille[ligne][colonne] === 0) return false;
@@ -157,6 +245,11 @@ function colonnePleine(grille, colonne) {
     return true;
 }
 
+/**
+ * cherche toutes les lignes et toutes les colonnes entièrement occupées
+ * :param grille: la grille à examiner
+ * :return: un objet {lignes, colonnes} contenant leurs index
+ */
 function chercherLignesPleines(grille) {
     const lignes = [];
     const colonnes = [];
@@ -170,6 +263,14 @@ function chercherLignesPleines(grille) {
     return { lignes, colonnes };
 }
 
+/**
+ * vérifie si une forme peut être posée à un endroit précis
+ * :param grille: la grille de jeu
+ * :param forme: nom de la forme à poser
+ * :param ligne: ligne du coin haut-gauche
+ * :param colonne: colonne du coin haut-gauche
+ * :return: true si toutes les cases de la forme sont dans la grille et vides, sinon false
+ */
 function peutPoser(grille, forme, ligne, colonne) {
     const taille = grille.length;
 
@@ -182,6 +283,12 @@ function peutPoser(grille, forme, ligne, colonne) {
     return true;
 }
 
+/**
+ * vérifie s'il existe au moins un endroit de la grille où la forme rentre
+ * :param grille: la grille de jeu
+ * :param forme: nom de la forme à tester
+ * :return: true si la forme rentre quelque part, sinon false
+ */
 function peutPoserQuelquePart(grille, forme) {
     for (let ligne = 0; ligne < grille.length; ligne++) {
         for (let colonne = 0; colonne < grille.length; colonne++) {
@@ -191,6 +298,15 @@ function peutPoserQuelquePart(grille, forme) {
     return false;
 }
 
+/**
+ * calcule les lignes et colonnes qui sauteraient si on posait cette forme ici
+ * sert à l'aperçu affiché quand le joueur survole la grille avec une pièce
+ * :param grille: la grille de jeu
+ * :param forme: nom de la forme
+ * :param ligne: ligne du coin haut-gauche
+ * :param colonne: colonne du coin haut-gauche
+ * :return: un objet {lignes, colonnes}, vide si la pose est impossible
+ */
 function lignesCasseesPar(grille, forme, ligne, colonne) {
     if (!peutPoser(grille, forme, ligne, colonne)) {
         return { lignes: [], colonnes: [] };
@@ -199,10 +315,23 @@ function lignesCasseesPar(grille, forme, ligne, colonne) {
     return chercherLignesPleines(grilleAvecForme(grille, forme, ligne, colonne, 1));
 }
 
+/**
+ * calcule la grille telle qu'elle serait après une pose, suppressions comprises
+ * sert uniquement aux essais de tirage, où seule la place restante compte
+ * :param grille: la grille de départ
+ * :param forme: nom de la forme posée
+ * :param ligne: ligne du coin haut-gauche
+ * :param colonne: colonne du coin haut-gauche
+ * :return: une nouvelle grille
+ */
 function grilleApresPose(grille, forme, ligne, colonne) {
     const remplie = grilleAvecForme(grille, forme, ligne, colonne, 1);
     return grilleSansLignes(remplie, chercherLignesPleines(remplie));
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// score
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // barème, approximation non officielle du jeu original :
 //      score = 30 x L! x min(combo + 1, 6 x L)
@@ -215,6 +344,11 @@ const PLAFOND_COMBO_PAR_LIGNE = 6;
 // la borne évite que la factorielle s'emballe si une forme plus grosse était ajoutée un jour
 const MAX_LIGNES_COMPTEES = 6;
 
+/**
+ * calcule la factorielle d'un nombre => 4! = 1 x 2 x 3 x 4 = 24
+ * :param n: le nombre de départ
+ * :return: le produit de tous les entiers de 1 à n
+ */
 function factorielle(n) {
     let resultat = 1;
 
@@ -224,12 +358,22 @@ function factorielle(n) {
     return resultat;
 }
 
+/**
+ * calcule les points rapportés par une suppression
+ * :param nbLignes: nombre de lignes et de colonnes cassées du même coup
+ * :param combo: nombre de lots d'affilée ayant déjà cassé une ligne
+ * :return: le nombre de points à ajouter au score
+ */
 function pointsDeSuppression(nbLignes, combo) {
     const lignes = Math.min(nbLignes, MAX_LIGNES_COMPTEES);
     const multiplicateur = Math.min(combo + 1, PLAFOND_COMBO_PAR_LIGNE * lignes);
 
     return POINTS_PAR_LIGNE * factorielle(lignes) * multiplicateur;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// tirage des pièces
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // un lot sur trois est composé de trois fois la même forme quand la grille est vide, contre 3 % en cours de partie
 // c'est le comportement du jeu original
@@ -243,6 +387,13 @@ const POIDS_GROSSE_FORME = 5;
 // nombre d'essais avant d'abandonner la garantie d'un lot entièrement posable
 const MAX_ESSAIS_LOT = 40;
 
+/**
+ * construit le sac dans lequel on tire les formes
+ * chaque forme y est déposée une fois, les grosses POIDS_GROSSE_FORME fois : tirer au hasard dans ce sac revient à
+ * donner plus de chances aux grosses formes, sans avoir à calculer quoi que ce soit au moment du tirage
+ * :param formes: liste des noms de formes autorisées
+ * :return: une liste où les grosses formes apparaissent plusieurs fois
+ */
 function construireSacDeFormes(formes) {
     const sac = [];
 
@@ -255,6 +406,11 @@ function construireSacDeFormes(formes) {
     return sac;
 }
 
+/**
+ * tire un élément au hasard dans une liste
+ * :param liste: la liste dans laquelle piocher
+ * :return: un de ses éléments
+ */
 function tirerAuHasard(liste) {
     return liste[Math.floor(Math.random() * liste.length)];
 }
@@ -263,6 +419,14 @@ function tirerAuHasard(liste) {
 // glissée, et un simple compteur suffit
 let prochainNumeroDePiece = 1;
 
+/**
+ * tire un lot de pièces au hasard, sans vérifier qu'elles sont posables
+ * :param nombre: nombre de pièces à tirer
+ * :param sac: sac de formes construit par construireSacDeFormes
+ * :param nbCouleurs: nombre de couleurs disponibles
+ * :param chanceTriple: probabilité que les pièces partagent toutes la même forme
+ * :return: une liste d'objets {id, forme, couleur}
+ */
 function creerPieces(nombre, sac, nbCouleurs, chanceTriple) {
     // tirée une fois pour tout le lot : si elle n'est pas nulle, toutes les pièces prennent cette forme
     let formeCommune = null;
@@ -282,6 +446,22 @@ function creerPieces(nombre, sac, nbCouleurs, chanceTriple) {
     return pieces;
 }
 
+/**
+ * vérifie s'il existe un ordre et des emplacements permettant de poser TOUTES ces formes à la suite
+ *
+ * méthode, dite recherche avec retour en arrière : on choisit une forme, on l'essaie à chaque endroit possible, et
+ * pour chaque endroit qui marche on recommence avec les formes restantes sur la grille obtenue. La fonction s'appelle
+ * donc elle-même avec un problème plus petit, une forme de moins, jusqu'à la liste vide qui est le cas gagnant.
+ * Si aucun essai ne mène à la liste vide, c'est perdu.
+ *
+ * exemple avec deux formes A et B : on essaie A partout, et pour chaque position de A qui tient on regarde si B rentre
+ * quelque part sur la grille où A est déjà posée. Si aucune position de A ne laisse de place à B, on repart de zéro en
+ * essayant B en premier. D'où "dans un ordre" dans le nom de la fonction.
+ *
+ * :param grille: la grille de départ
+ * :param formes: liste des noms de formes à poser
+ * :return: true s'il existe une solution, sinon false
+ */
 function peutToutPoserDansUnOrdre(grille, formes) {
     // plus rien à poser : toutes les formes ont trouvé leur place
     if (formes.length === 0) return true;
@@ -313,6 +493,14 @@ function peutToutPoserDansUnOrdre(grille, formes) {
     return false;
 }
 
+/**
+ * tire un lot de pièces posables toutes ensemble, dans un ordre ou dans un autre
+ * une défaite vient donc d'un mauvais placement du joueur, jamais du tirage
+ * en dernier recours on garde le dernier lot tiré, dont chaque pièce est au moins posable seule
+ * :param etat: l'état du jeu, pour sa grille et son nombre de couleurs
+ * :param nombre: nombre de pièces à tirer
+ * :return: une liste d'objets {id, forme, couleur}
+ */
 function tirerLotPosable(etat, nombre) {
     const grille = etat.grille;
 
@@ -339,6 +527,16 @@ function tirerLotPosable(etat, nombre) {
     return pieces;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// état de la partie
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * fabrique l'état de départ d'une nouvelle partie
+ * :param taille: côté de la grille
+ * :param nbCouleurs: nombre de couleurs de pièces disponibles
+ * :return: un état complet, avec son premier lot de pièces
+ */
 function creerEtatInitial(taille = 8, nbCouleurs = 4) {
     const etatVide = {
         taille: taille,
@@ -353,6 +551,12 @@ function creerEtatInitial(taille = 8, nbCouleurs = 4) {
     return etatAvec(etatVide, { pieces: tirerLotPosable(etatVide, PIECES_PAR_LOT) });
 }
 
+/**
+ * cherche une pièce dans la réserve à partir de son identifiant
+ * :param pieces: la réserve de pièces
+ * :param id: identifiant cherché
+ * :return: la pièce, ou null si elle n'est pas dans la réserve
+ */
 function trouverPiece(pieces, id) {
     for (const piece of pieces) {
         if (piece.id === id) return piece;
@@ -360,6 +564,12 @@ function trouverPiece(pieces, id) {
     return null;
 }
 
+/**
+ * vide les lignes et colonnes pleines et ajoute les points correspondants
+ * le combo monte ici mais ne redescend jamais : c'est poserPiece qui tranche en fin de lot
+ * :param etat: l'état à nettoyer, qui n'est pas modifié
+ * :return: un nouvel état, identique si rien n'était plein
+ */
 function supprimerLignesPleines(etat) {
     const pleines = chercherLignesPleines(etat.grille);
     const nbLignes = pleines.lignes.length + pleines.colonnes.length;
@@ -375,6 +585,15 @@ function supprimerLignesPleines(etat) {
     });
 }
 
+/**
+ * pose une pièce sur la grille et applique toutes les conséquences du coup
+ * si la pose est impossible, l'état est renvoyé tel quel
+ * :param etat: l'état avant le coup, qui n'est pas modifié
+ * :param idPiece: identifiant de la pièce posée
+ * :param ligne: ligne du coin haut-gauche
+ * :param colonne: colonne du coin haut-gauche
+ * :return: un nouvel état
+ */
 function poserPiece(etat, idPiece, ligne, colonne) {
     const piece = trouverPiece(etat.pieces, idPiece);
     if (piece === null || !peutPoser(etat.grille, piece.forme, ligne, colonne)) {
@@ -410,6 +629,11 @@ function poserPiece(etat, idPiece, ligne, colonne) {
     });
 }
 
+/**
+ * vérifie si la partie est terminée => aucune des pièces proposées ne rentre nulle part
+ * :param etat: l'état du jeu
+ * :return: true si le joueur est bloqué, sinon false
+ */
 function partieTerminee(etat) {
     for (const piece of etat.pieces) {
         if (peutPoserQuelquePart(etat.grille, piece.forme)) return false;
@@ -417,6 +641,14 @@ function partieTerminee(etat) {
     return true;
 }
 
+/**
+ * remplit une case vide ou vide une case pleine
+ * sert au mode debug, pour préparer une situation à la main
+ * :param etat: l'état de départ, qui n'est pas modifié
+ * :param ligne: ligne de la case
+ * :param colonne: colonne de la case
+ * :return: un nouvel état
+ */
 function basculerCase(etat, ligne, colonne) {
     const grille = copierGrille(etat.grille);
     grille[ligne][colonne] = grille[ligne][colonne] === 0 ? 1 : 0;
@@ -424,8 +656,10 @@ function basculerCase(etat, ligne, colonne) {
     return etatAvec(etat, { grille: grille });
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // rend les fonctions accessibles aux tests exécutés avec Node
 // dans le navigateur la variable "module" n'existe pas, la ligne est donc simplement ignorée
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 if (typeof module !== "undefined") {
     module.exports = {
         FORMES, GROSSES_FORMES, PIECES_PAR_LOT,

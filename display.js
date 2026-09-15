@@ -1,3 +1,17 @@
+// programme: Block Blast section affichage
+// par : Roux Loïc, Léo Del Duca, Jason Roger Marc Edmonds
+// créé le : 18.08.2026
+// Version: V.2.0
+// dernière modif: 10.09.2026
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Ce fichier contient tout ce qui touche à la page. Il lit l'état du jeu mais ne le modifie jamais : quand le joueur
+// fait quelque chose, il prévient la couche de contrôle (main.js) en appelant une fonction reçue en paramètre.
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// thèmes de couleurs
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // chaque thème donne les couleurs de l'interface, plus une liste de nuances pour les pièces posées
 // la longueur de cette liste est la seule source de vérité pour le nombre de couleurs du jeu : ajouter une nuance ici
 // suffit, le reste du programme suit tout seul
@@ -23,6 +37,12 @@ const themes = [
 // nombre de couleurs de pièces, déduit du premier thème
 const NB_COULEURS_PIECES = themes[0].pieces.length;
 
+/**
+ * applique un thème à toute la page
+ * les couleurs sont posées comme variables CSS : le reste de la mise en forme y fait référence sans les connaître
+ * :param theme: un des objets de la liste themes
+ * :return: rien, la page change de couleurs
+ */
 function appliquerTheme(theme) {
     const racine = document.documentElement.style;
 
@@ -37,6 +57,11 @@ function appliquerTheme(theme) {
     }
 }
 
+/**
+ * remplit le panneau de choix de thème et branche le bouton qui l'ouvre
+ * :param surChoix: fonction appelée avec le thème choisi quand le joueur clique une pastille
+ * :return: rien, le panneau est rempli
+ */
 function afficherChoixTheme(surChoix) {
     const panneau = document.getElementById("panneau-themes");
 
@@ -54,6 +79,10 @@ function afficherChoixTheme(surChoix) {
     });
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// grille
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // taille d'une case en pixels, transmise au CSS par la variable --taille-case
 const TAILLE_CASE = 40;
 
@@ -64,10 +93,24 @@ let etatAffiche = null;
 // identifiant de la pièce en cours de glisser-déposer, ou null. C'est de l'affichage, pas de l'état du jeu.
 let idPieceGlissee = null;
 
+/**
+ * retrouve l'élément d'une case de la grille à partir de ses coordonnées
+ * :param ligne: ligne cherchée
+ * :param colonne: colonne cherchée
+ * :return: l'élément de la page, ou null si ces coordonnées sortent de la grille
+ */
 function caseGrille(ligne, colonne) {
     return document.querySelector(`#grille .case[data-ligne="${ligne}"][data-colonne="${colonne}"]`);
 }
 
+/**
+ * rassemble les éléments de toutes les cases des lignes et colonnes indiquées
+ * on utilise un Set et non une liste, sinon une case au croisement d'une ligne pleine et d'une colonne pleine serait
+ * comptée deux fois
+ * :param taille: côté de la grille
+ * :param pleines: objet {lignes, colonnes} contenant les index concernés
+ * :return: un Set d'éléments de la page
+ */
 function casesDesLignes(taille, pleines) {
     const cases = new Set();
 
@@ -86,10 +129,23 @@ function casesDesLignes(taille, pleines) {
     return cases;
 }
 
+/**
+ * colore une case avec une des nuances du thème
+ * on passe par la variable --remplissage-case et non par une classe : le CSS n'a ainsi pas besoin de connaître le
+ * nombre de couleurs, et les classes d'aperçu restent prioritaires sur la couleur de la pièce
+ * :param element: l'élément de la case
+ * :param couleur: index de la nuance, de 0 à NB_COULEURS_PIECES - 1
+ * :return: rien, la case change de couleur
+ */
 function colorerCase(element, couleur) {
     element.style.setProperty("--remplissage-case", `var(--couleur-piece-${couleur})`);
 }
 
+/**
+ * redessine entièrement la grille à partir de l'état
+ * :param etat: l'état du jeu
+ * :return: rien, la grille est reconstruite
+ */
 function afficherGrille(etat) {
     // les écouteurs posés sur la grille viendront lire cet état
     etatAffiche = etat;
@@ -119,12 +175,28 @@ function afficherGrille(etat) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// aperçu de placement et animation
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * enlève toutes les marques d'aperçu de la grille
+ * :return: rien, la grille reprend son apparence normale
+ */
 function effacerApercu() {
     for (const element of document.querySelectorAll("#grille .case")) {
         element.classList.remove("apercu-valide", "apercu-invalide", "apercu-suppression");
     }
 }
 
+/**
+ * montre où la pièce se poserait, et ce que cette pose casserait
+ * :param etat: l'état du jeu
+ * :param forme: nom de la forme survolée
+ * :param ligne: ligne du coin haut-gauche envisagé
+ * :param colonne: colonne du coin haut-gauche envisagé
+ * :return: rien, la grille est marquée
+ */
 function afficherApercu(etat, forme, ligne, colonne) {
     effacerApercu();
 
@@ -149,6 +221,13 @@ function afficherApercu(etat, forme, ligne, colonne) {
     }
 }
 
+/**
+ * fait clignoter les lignes qui viennent de sauter
+ * elles sont calculées AVANT la pose par main.js : après, elles sont déjà vides et il n'y aurait plus rien à animer
+ * :param etat: l'état du jeu après la pose
+ * :param cassees: objet {lignes, colonnes} calculé avant la pose
+ * :return: rien, l'animation se lance
+ */
 function animerLignesCassees(etat, cassees) {
     for (const element of casesDesLignes(etat.taille, cassees)) {
         element.classList.add("vient-de-sauter");
@@ -160,6 +239,18 @@ function animerLignesCassees(etat, cassees) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// interactions sur la grille
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * traduit la position du curseur en coin haut-gauche de la forme
+ * sans ce calcul la pièce s'accrocherait par son coin, alors qu'on veut qu'elle paraisse centrée sous le curseur
+ * :param forme: nom de la forme glissée
+ * :param element: la case survolée
+ * :param evenement: l'événement de souris, pour la position exacte dans la case
+ * :return: un objet {ligne, colonne}, éventuellement hors de la grille
+ */
 function origineDeLaPose(forme, element, evenement) {
     const taille = tailleDeLaForme(forme);
 
@@ -174,6 +265,15 @@ function origineDeLaPose(forme, element, evenement) {
     };
 }
 
+/**
+ * branche les écouteurs sur la grille
+ * ils sont posés sur la grille elle-même et non sur chacune des 64 cases : deux écouteurs au lieu de cent
+ * vingt-huit, et surtout rien à rebrancher après un affichage, puisque la grille survit alors que les cases sont
+ * recréées à chaque tour
+ * :param surPose: fonction appelée avec (idPiece, ligne, colonne) quand le joueur lâche une pièce
+ * :param surBascule: fonction appelée avec (ligne, colonne) quand le joueur clique une case en mode debug
+ * :return: rien, les écouteurs sont en place
+ */
 function initInteractionsGrille(surPose, surBascule) {
     const conteneur = document.getElementById("grille");
 
@@ -182,6 +282,11 @@ function initInteractionsGrille(surPose, surBascule) {
     conteneur.addEventListener("click", (evenement) => surClicDebug(evenement, surBascule));
 }
 
+/**
+ * retrouve la case survolée et la pièce en cours de glisser
+ * :param evenement: l'événement de souris
+ * :return: un objet {element, piece}, ou null si l'événement ne concerne pas une case ou si rien n'est glissé
+ */
 function pieceGlisseeSur(evenement) {
     // closest remonte de l'élément touché jusqu'à la case qui le contient ; renvoie null pour la marge de la grille
     const element = evenement.target.closest(".case");
@@ -193,6 +298,11 @@ function pieceGlisseeSur(evenement) {
     return { element: element, piece: piece };
 }
 
+/**
+ * montre l'aperçu pendant que le joueur promène une pièce au-dessus de la grille
+ * :param evenement: l'événement dragover
+ * :return: rien
+ */
 function surSurvolGlisser(evenement) {
     const cible = pieceGlisseeSur(evenement);
     if (cible === null) return;
@@ -205,6 +315,12 @@ function surSurvolGlisser(evenement) {
     afficherApercu(etatAffiche, cible.piece.forme, origine.ligne, origine.colonne);
 }
 
+/**
+ * prévient la couche de contrôle quand le joueur lâche une pièce sur la grille
+ * :param evenement: l'événement drop
+ * :param surPose: fonction à appeler avec (idPiece, ligne, colonne)
+ * :return: rien
+ */
 function surLacher(evenement, surPose) {
     const cible = pieceGlisseeSur(evenement);
     if (cible === null) return;
@@ -216,6 +332,12 @@ function surLacher(evenement, surPose) {
     surPose(cible.piece.id, origine.ligne, origine.colonne);
 }
 
+/**
+ * prévient la couche de contrôle quand le joueur clique une case, en mode debug uniquement
+ * :param evenement: l'événement click
+ * :param surBascule: fonction à appeler avec (ligne, colonne)
+ * :return: rien
+ */
 function surClicDebug(evenement, surBascule) {
     if (!document.body.classList.contains("mode-debug")) return;
 
@@ -228,6 +350,10 @@ function surClicDebug(evenement, surBascule) {
 // mot à taper n'importe où sur la page pour activer ou désactiver le mode debug
 const CODE_DEBUG = "debug";
 
+/**
+ * surveille le clavier pour activer le mode debug
+ * :return: rien, l'écouteur est en place
+ */
 function initRaccourciDebug() {
     let touchesTapees = "";
 
@@ -245,6 +371,15 @@ function initRaccourciDebug() {
     });
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// réserve de pièces, score et fin de partie
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * fabrique l'élément d'une pièce de la réserve, prêt à être glissé
+ * :param piece: un objet {id, forme, couleur}
+ * :return: l'élément de la page
+ */
 function creerElementPiece(piece) {
     const taille = tailleDeLaForme(piece.forme);
     const cases = FORMES[piece.forme];
@@ -296,6 +431,11 @@ function creerElementPiece(piece) {
     return element;
 }
 
+/**
+ * redessine la réserve des trois pièces proposées
+ * :param etat: l'état du jeu
+ * :return: rien, la réserve est reconstruite
+ */
 function afficherReserve(etat) {
     const conteneur = document.getElementById("reserve");
     conteneur.innerHTML = "";
@@ -311,6 +451,12 @@ function afficherReserve(etat) {
     }
 }
 
+/**
+ * met à jour le score, le record et le combo
+ * :param etat: l'état du jeu
+ * :param record: meilleur score connu, relu depuis le navigateur
+ * :return: rien, les textes sont mis à jour
+ */
 function afficherScore(etat, record) {
     document.getElementById("score").textContent = `Score : ${etat.score}`;
     document.getElementById("record").textContent = `Record : ${record}`;
@@ -321,6 +467,11 @@ function afficherScore(etat, record) {
     elementCombo.classList.toggle("visible", etat.combo > 1);
 }
 
+/**
+ * affiche ou cache l'écran de fin de partie
+ * :param etat: l'état du jeu
+ * :return: rien
+ */
 function afficherFinDePartie(etat) {
     const perdu = partieTerminee(etat);
     document.getElementById("fin-de-partie").classList.toggle("ouvert", perdu);

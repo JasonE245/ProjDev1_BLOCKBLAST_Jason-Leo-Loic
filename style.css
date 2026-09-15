@@ -1,3 +1,14 @@
+/*
+    programme: Block Blast section mise en forme
+    par : Roux Loïc, Léo Del Duca, Jason Roger Marc Edmonds
+    créé le : 18.08.2026
+    Version: V.2.0
+    dernière modif: 10.09.2026
+    ================================================================================================================
+    Les couleurs ne sont pas écrites en dur : ce sont des variables posées par appliquerTheme() dans display.js.
+    Les valeurs ci-dessous ne servent donc que le temps du tout premier affichage.
+*/
+
 :root {
     --couleur-fond: #1e1e2e;
     --fond-grille: #313244;
@@ -22,6 +33,10 @@ body {
     /* empêche la sélection du texte quand on glisse une pièce trop vite */
     user-select: none;
 }
+
+/* ================================================================================================================
+   score, record et combo
+   ================================================================================================================ */
 
 #entete {
     display: flex;
@@ -54,6 +69,10 @@ body {
 #combo.visible {
     opacity: 1;
 }
+
+/* ================================================================================================================
+   grille de jeu
+   ================================================================================================================ */
 
 #grille {
     display: grid;
@@ -114,6 +133,10 @@ body {
     }
 }
 
+/* ================================================================================================================
+   réserve des trois pièces
+   ================================================================================================================ */
+
 #reserve {
     display: flex;
     align-items: center;
@@ -156,6 +179,10 @@ body {
     /* les cases du rectangle qui ne font pas partie de la forme restent transparentes */
     background: var(--remplissage-case, transparent);
 }
+
+/* ================================================================================================================
+   écran de fin de partie
+   ================================================================================================================ */
 
 #fin-de-partie {
     position: fixed;
@@ -206,6 +233,10 @@ body {
     font-family: inherit;
     cursor: pointer;
 }
+
+/* ================================================================================================================
+   choix du thème et mode debug
+   ================================================================================================================ */
 
 #bouton-theme {
     position: fixed;
