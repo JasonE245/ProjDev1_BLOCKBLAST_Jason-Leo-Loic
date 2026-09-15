@@ -1,0 +1,9 @@
+{
+  "name": "block-blast",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Block Blast - projet de developpement, CPNV",
+  "scripts": {
+    "test": "node --test"
+  }
+}
