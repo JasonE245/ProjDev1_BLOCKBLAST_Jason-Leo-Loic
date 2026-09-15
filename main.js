@@ -21,7 +21,7 @@ function render() {
     renderGrid(state);
     renderScore(state, bestScore);
     renderPieceTray(state);
-    renderGameOver(state, handleRestart);
+    renderGameOver(state);
 }
 
 function handleDropPiece(pieceId, row, col) {
@@ -55,6 +55,8 @@ function selectTheme(theme) {
 // on retrouve le thème choisi la dernière fois, et à défaut le premier de la liste
 const savedTheme = themes.find((t) => t.name === localStorage.getItem(THEME_KEY));
 applyTheme(savedTheme || themes[0]);
+
+document.getElementById("restart-button").addEventListener("click", handleRestart);
 
 renderThemePicker(selectTheme);
 initGridInteractions(handleDropPiece, handleDebugToggle);

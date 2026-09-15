@@ -81,14 +81,13 @@ function animateClearedLines(state, { rows, cols }) {
     });
 }
 
-function renderGameOver(state, onRestart) {
-    const overlay = document.getElementById("game-over");
+function renderGameOver(state) {
     const gameOver = isGameOver(state);
-    overlay.classList.toggle("open", gameOver);
+    document.getElementById("game-over").classList.toggle("open", gameOver);
 
-    if (!gameOver) return;
-    document.getElementById("final-score").textContent = state.score;
-    document.getElementById("restart-button").onclick = onRestart;
+    if (gameOver) {
+        document.getElementById("final-score").textContent = state.score;
+    }
 }
 
 // id de la pièce en cours de glisser-déposer ; état d'affichage transitoire, pas de l'état du jeu
