@@ -32,7 +32,7 @@
     // vivent ici, jamais dans game_logic.js.
     const BEST_SCORE_KEY = "blockblast-record";
 
-    let state = createInitialState(8);
+    let state = createInitialState(8, PIECE_COLOR_COUNT);
     let bestScore = loadBestScore();
 
     function loadBestScore() {
@@ -71,7 +71,7 @@
     }
 
     function handleRestart() {
-        state = createInitialState(8);
+        state = createInitialState(8, PIECE_COLOR_COUNT);
         render();
     }
 

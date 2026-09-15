@@ -57,9 +57,6 @@ const SHAPES = {
     diagonale_3_90: [[0, 0], [1, 1], [2, 2]],
 };
 
-// nb de couleurs de la palette active (voir themes[].pieces dans display.js)
-const PIECE_COLOR_COUNT = 4;
-
 // Barème de score (approximation non officielle du jeu original) :
 //   score = 30 * L! * min(combo + 1, 6 * L)
 // L = lignes/colonnes cassées d'un coup, combo = suppressions d'affilée précédentes.
@@ -84,9 +81,10 @@ function lineClearScore(linesCleared, combo) {
     return BASE_LINE_POINTS * factorial(lines) * multiplier;
 }
 
-function createInitialState(size = 8) {
+function createInitialState(size = 8, colorCount = 4) {
     const emptyState = {
         size,
+        colorCount,
         grid: Array.from({ length: size }, () => Array(size).fill(0)),
         score: 0,
         combo: 0,
@@ -149,7 +147,7 @@ function generatePieces(count, state = null) {
     return Array.from({ length: count }, () => ({
         id: `piece-${Math.random().toString(36).slice(2, 9)}`,
         shape: tripleShape || pickWeightedShape(shapeNames),
-        color: Math.floor(Math.random() * PIECE_COLOR_COUNT),
+        color: Math.floor(Math.random() * state.colorCount),
     }));
 }
 

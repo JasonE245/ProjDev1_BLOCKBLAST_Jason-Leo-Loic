@@ -18,6 +18,9 @@ const themes = [
     },
 ];
 
+// la longueur de `pieces` est la seule source de vérité pour le nombre de couleurs du jeu
+const PIECE_COLOR_COUNT = themes[0].pieces.length;
+
 function applyTheme(theme) {
     const root = document.documentElement.style;
     root.setProperty("--bg-color", theme.bg);
