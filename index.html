@@ -47,7 +47,7 @@
     }
 
     function render() {
-        renderGrid(state, handleDropPiece);
+        renderGrid(state);
         renderScore(state, bestScore);
         renderPieceTray(state);
         renderGameOver(state, handleRestart);
@@ -86,7 +86,8 @@
     applyTheme(savedTheme || themes[0]);
 
     renderThemePicker(selectTheme);
-    initDebugMode(handleDebugToggle);
+    initGridInteractions(handleDropPiece, handleDebugToggle);
+    initDebugShortcut();
     render();
 </script>
 </body>

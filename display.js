@@ -94,11 +94,10 @@ function renderGameOver(state, onRestart) {
 // id de la pièce en cours de glisser-déposer ; état d'affichage transitoire, pas de l'état du jeu
 let draggedPieceId = null;
 
-// mode debug : taper "debug" n'importe où sur la page l'active/désactive. Une fois actif,
-// cliquer une case appelle onToggleCell(row, col) au lieu du glisser-déposer.
+// mode debug : taper "debug" n'importe où sur la page l'active/désactive
 const DEBUG_TRIGGER = "debug";
 
-function initDebugMode(onToggleCell) {
+function initDebugShortcut() {
     let typedKeys = "";
 
     document.addEventListener("keydown", (event) => {
@@ -108,8 +107,36 @@ function initDebugMode(onToggleCell) {
             document.body.classList.toggle("debug-mode");
         }
     });
+}
 
-    document.getElementById("grid").addEventListener("click", (event) => {
+// Dernier état affiché. Les écouteurs de la grille sont posés une seule fois alors que les
+// cases sont recréées à chaque affichage : ils viennent lire l'état courant ici.
+let displayedState = null;
+
+// Les écouteurs sont posés sur la grille et non sur chacune des 64 cases : deux écouteurs
+// au lieu de cent vingt-huit, et rien à rebrancher après un réaffichage.
+function initGridInteractions(onDropPiece, onToggleCell) {
+    const container = document.getElementById("grid");
+
+    container.addEventListener("dragover", (event) => {
+        const target = draggedPieceAt(event);
+        if (!target) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        const origin = computeDropOrigin(target.piece.shape, target.cell, event);
+        showPlacementPreview(displayedState, target.piece.shape, origin.row, origin.col);
+    });
+
+    container.addEventListener("drop", (event) => {
+        const target = draggedPieceAt(event);
+        if (!target) return;
+        event.preventDefault();
+        clearPlacementPreview();
+        const origin = computeDropOrigin(target.piece.shape, target.cell, event);
+        onDropPiece(target.piece.id, origin.row, origin.col);
+    });
+
+    container.addEventListener("click", (event) => {
         if (!document.body.classList.contains("debug-mode")) return;
         const cell = event.target.closest(".cell");
         if (!cell) return;
@@ -117,17 +144,28 @@ function initDebugMode(onToggleCell) {
     });
 }
 
+// case survolée et pièce en cours de glisser, ou null si l'un des deux manque
+function draggedPieceAt(event) {
+    const cell = event.target.closest(".cell");
+    if (!cell || !displayedState) return null;
+
+    const piece = displayedState.pieces.find((p) => p.id === draggedPieceId);
+    if (!piece) return null;
+
+    return { cell, piece };
+}
+
 // taille d'une case en pixels, transmise au CSS par la variable --cell-size
 const CELL_SIZE = 40;
 
 // convertit la position du curseur en case d'origine (coin haut-gauche) de la forme,
 // pour que la pièce paraisse centrée sous le curseur
-function computeDropOrigin(shapeName, hoverRow, hoverCol, offsetX, offsetY) {
+function computeDropOrigin(shapeName, cell, event) {
     const shape = SHAPES[shapeName];
     const rows = Math.max(...shape.map(([r]) => r)) + 1;
     const cols = Math.max(...shape.map(([, c]) => c)) + 1;
-    const cursorRow = hoverRow + offsetY / CELL_SIZE;
-    const cursorCol = hoverCol + offsetX / CELL_SIZE;
+    const cursorRow = Number(cell.dataset.row) + event.offsetY / CELL_SIZE;
+    const cursorCol = Number(cell.dataset.col) + event.offsetX / CELL_SIZE;
     return {
         row: Math.round(cursorRow - rows / 2),
         col: Math.round(cursorCol - cols / 2),
@@ -188,8 +226,10 @@ function gridCellAt(row, col) {
     return document.querySelector(`#grid .cell[data-row="${row}"][data-col="${col}"]`);
 }
 
-function showPlacementPreview(state, shapeName, row, col, valid) {
+function showPlacementPreview(state, shapeName, row, col) {
     clearPlacementPreview();
+
+    const valid = canPlacePiece(state, shapeName, row, col);
 
     getShapeCells(shapeName, row, col).forEach(([r, c]) => {
         if (r < 0 || r >= state.size || c < 0 || c >= state.size) return;
@@ -218,7 +258,10 @@ function clearPlacementPreview() {
         );
 }
 
-function renderGrid(state, onDropPiece) {
+function renderGrid(state) {
+    // les écouteurs posés sur la grille viendront lire cet état
+    displayedState = state;
+
     const container = document.getElementById("grid");
     container.style.setProperty("--cell-size", `${CELL_SIZE}px`);
     container.style.gridTemplateColumns = `repeat(${state.size}, var(--cell-size))`;
@@ -236,31 +279,6 @@ function renderGrid(state, onDropPiece) {
             if (cellValue !== 0) {
                 cell.style.setProperty("--cell-fill", `var(--piece-color-${cellValue - 1})`);
             }
-
-            cell.addEventListener("dragover", (event) => {
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "move";
-                const piece = state.pieces.find((p) => p.id === draggedPieceId);
-                if (!piece) return;
-                const origin = computeDropOrigin(piece.shape, row, col, event.offsetX, event.offsetY);
-                showPlacementPreview(
-                    state,
-                    piece.shape,
-                    origin.row,
-                    origin.col,
-                    canPlacePiece(state, piece.shape, origin.row, origin.col)
-                );
-            });
-
-            cell.addEventListener("drop", (event) => {
-                event.preventDefault();
-                clearPlacementPreview();
-                const pieceId = event.dataTransfer.getData("text/plain");
-                const piece = state.pieces.find((p) => p.id === pieceId);
-                if (!piece) return;
-                const origin = computeDropOrigin(piece.shape, row, col, event.offsetX, event.offsetY);
-                onDropPiece(pieceId, origin.row, origin.col);
-            });
 
             container.appendChild(cell);
         }
