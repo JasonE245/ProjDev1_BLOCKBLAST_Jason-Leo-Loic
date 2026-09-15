@@ -1,4 +1,4 @@
-// `pieces` = PIECE_COLOR_COUNT nuances de `filled`, pour distinguer les pièces posées
+// `pieces` = les nuances utilisées pour distinguer les pièces posées
 const themes = [
     {
         name: "mauve", bg: "#1e1e2e", grid: "#313244", cell: "#45475a", filled: "#89b4fa",
@@ -154,7 +154,7 @@ function renderPieceTray(state) {
                 const cell = document.createElement("div");
                 cell.className = "piece-cell";
                 if (shape.some(([r, c]) => r === row && c === col)) {
-                    cell.classList.add("filled", `color-${piece.color}`);
+                    cell.classList.add(`color-${piece.color}`);
                 }
                 pieceEl.appendChild(cell);
             }
@@ -230,7 +230,7 @@ function renderGrid(state, onDropPiece) {
 
             const cellValue = state.grid[row][col];
             if (cellValue !== 0) {
-                cell.classList.add("filled", `color-${cellValue - 1}`);
+                cell.classList.add(`color-${cellValue - 1}`);
             }
 
             cell.addEventListener("dragover", (event) => {
