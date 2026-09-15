@@ -22,8 +22,6 @@ body {
 
 #grid {
     display: grid;
-    grid-template-columns: repeat(8, 40px);
-    grid-template-rows: repeat(8, 40px);
     gap: 2px;
     background: var(--grid-bg);
     padding: 8px;
@@ -32,8 +30,8 @@ body {
 
 /* --cell-fill est posée case par case en JS ; les cases vides gardent la couleur de fond */
 .cell {
-    width: 40px;
-    height: 40px;
+    width: var(--cell-size);
+    height: var(--cell-size);
     border-radius: 4px;
     background: var(--cell-fill, var(--cell-color));
 }

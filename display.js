@@ -117,7 +117,7 @@ function initDebugMode(onToggleCell) {
     });
 }
 
-// doit correspondre à la taille de .cell dans style.css
+// taille d'une case en pixels, transmise au CSS par la variable --cell-size
 const CELL_SIZE = 40;
 
 // convertit la position du curseur en case d'origine (coin haut-gauche) de la forme,
@@ -220,8 +220,9 @@ function clearPlacementPreview() {
 
 function renderGrid(state, onDropPiece) {
     const container = document.getElementById("grid");
-    container.style.gridTemplateColumns = `repeat(${state.size}, 40px)`;
-    container.style.gridTemplateRows = `repeat(${state.size}, 40px)`;
+    container.style.setProperty("--cell-size", `${CELL_SIZE}px`);
+    container.style.gridTemplateColumns = `repeat(${state.size}, var(--cell-size))`;
+    container.style.gridTemplateRows = `repeat(${state.size}, var(--cell-size))`;
     container.innerHTML = "";
 
     for (let row = 0; row < state.size; row++) {
