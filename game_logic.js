@@ -67,6 +67,11 @@ const PIECE_COLOR_COUNT = 4;
 const BASE_LINE_POINTS = 30;
 const COMBO_CAP_PER_LINE = 6;
 
+// Une pièce casse au plus 6 lignes d'un coup : 5 lignes + 1 colonne avec une ligne5,
+// 3 + 3 avec un carré 3x3. La borne évite que la factorielle s'emballe si une forme
+// plus grosse était ajoutée un jour.
+const MAX_LINES_SCORED = 6;
+
 function factorial(n) {
     let result = 1;
     for (let i = 2; i <= n; i++) result *= i;
@@ -74,8 +79,9 @@ function factorial(n) {
 }
 
 function lineClearScore(linesCleared, combo) {
-    const multiplier = Math.min(combo + 1, COMBO_CAP_PER_LINE * linesCleared);
-    return BASE_LINE_POINTS * factorial(linesCleared) * multiplier;
+    const lines = Math.min(linesCleared, MAX_LINES_SCORED);
+    const multiplier = Math.min(combo + 1, COMBO_CAP_PER_LINE * lines);
+    return BASE_LINE_POINTS * factorial(lines) * multiplier;
 }
 
 function createInitialState(size = 8) {
