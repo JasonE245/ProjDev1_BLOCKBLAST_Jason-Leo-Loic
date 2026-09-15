@@ -25,7 +25,7 @@ body {
     user-select: none;
 }
 
-#grid {
+#grille {
     display: grid;
     gap: 2px;
     background: var(--grid-bg);
@@ -34,36 +34,36 @@ body {
 }
 
 /* --cell-fill est posée case par case en JS ; les cases vides gardent la couleur de fond */
-.cell {
+.case {
     width: var(--cell-size);
     height: var(--cell-size);
     border-radius: 4px;
     background: var(--cell-fill, var(--cell-color));
 }
 
-.cell.preview-valid {
+.case.apercu-valide {
     background: var(--filled-color);
     opacity: 0.5;
 }
 
-.cell.preview-invalid {
+.case.apercu-invalide {
     background: #f38ba8;
     opacity: 0.5;
 }
 
-/* ligne/colonne qui sauterait avec cette pose ; déclarée après preview-valid/-invalid pour gagner */
-.cell.preview-clear {
+/* ligne/colonne qui sauterait avec cette pose ; déclarée après apercu-valide/-invalid pour gagner */
+.case.apercu-suppression {
     background: #ffffff;
     opacity: 1;
     box-shadow: 0 0 0 2px #ffffff, 0 0 14px rgba(255, 255, 255, 0.9);
 }
 
 /* éclair blanc sur une ligne qui vient de sauter */
-.cell.just-cleared {
-    animation: clear-flash 450ms ease-out;
+.case.vient-de-sauter {
+    animation: eclair-suppression 450ms ease-out;
 }
 
-@keyframes clear-flash {
+@keyframes eclair-suppression {
     0% {
         background: #ffffff;
         box-shadow: 0 0 18px rgba(255, 255, 255, 0.95);
@@ -81,23 +81,23 @@ body {
     }
 }
 
-#hud {
+#entete {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-#score-display {
+#score {
     font-size: 18px;
     font-weight: bold;
 }
 
-#best-score {
+#record {
     font-size: 13px;
     opacity: 0.7;
 }
 
-#combo-display {
+#combo {
     padding: 4px 12px;
     border-radius: 999px;
     background: var(--filled-color);
@@ -108,11 +108,11 @@ body {
     transition: opacity 0.2s;
 }
 
-#combo-display.visible {
+#combo.visible {
     opacity: 1;
 }
 
-#game-over {
+#fin-de-partie {
     position: fixed;
     inset: 0;
     display: none;
@@ -121,36 +121,36 @@ body {
     background: rgba(0, 0, 0, 0.75);
 }
 
-#game-over.open {
+#fin-de-partie.ouvert {
     display: flex;
 }
 
-#game-over-box {
+#boite-fin {
     padding: 32px 48px;
     border-radius: 12px;
     background: var(--grid-bg);
     text-align: center;
 }
 
-#game-over-box h1 {
+#boite-fin h1 {
     margin: 0 0 16px;
     font-size: 24px;
 }
 
-#game-over-box p {
+#boite-fin p {
     margin: 0;
     opacity: 0.7;
     font-size: 14px;
 }
 
-#final-score {
+#score-final {
     margin: 8px 0 24px;
     font-size: 40px;
     font-weight: bold;
     color: var(--filled-color);
 }
 
-#restart-button {
+#bouton-rejouer {
     padding: 10px 28px;
     border: none;
     border-radius: 8px;
@@ -162,7 +162,7 @@ body {
     cursor: pointer;
 }
 
-#debug-indicator {
+#indicateur-debug {
     position: fixed;
     top: 16px;
     left: 50%;
@@ -176,15 +176,15 @@ body {
     letter-spacing: 1px;
 }
 
-body.debug-mode #debug-indicator {
+body.mode-debug #indicateur-debug {
     display: block;
 }
 
-body.debug-mode #grid .cell {
+body.mode-debug #grille .case {
     cursor: crosshair;
 }
 
-#theme-toggle {
+#bouton-theme {
     position: fixed;
     top: 16px;
     right: 16px;
@@ -197,7 +197,7 @@ body.debug-mode #grid .cell {
     cursor: pointer;
 }
 
-#theme-panel {
+#panneau-themes {
     position: fixed;
     top: 52px;
     right: 16px;
@@ -208,11 +208,11 @@ body.debug-mode #grid .cell {
     border-radius: 8px;
 }
 
-#theme-panel.open {
+#panneau-themes.ouvert {
     display: flex;
 }
 
-.theme-swatch {
+.pastille-theme {
     width: 24px;
     height: 24px;
     padding: 0;
@@ -221,11 +221,11 @@ body.debug-mode #grid .cell {
     cursor: pointer;
 }
 
-.theme-swatch:hover {
+.pastille-theme:hover {
     border-color: white;
 }
 
-#piece-tray {
+#reserve {
     display: flex;
     align-items: center;
     gap: 16px;
@@ -234,7 +234,7 @@ body.debug-mode #grid .cell {
     border-radius: 8px;
 }
 
-.piece-slot {
+.emplacement-piece {
     width: 96px;
     height: 96px;
     display: flex;
@@ -254,11 +254,11 @@ body.debug-mode #grid .cell {
     cursor: grabbing;
 }
 
-.piece.dragging {
+.piece.en-glissement {
     opacity: 0.35;
 }
 
-.piece-cell {
+.case-piece {
     width: 14px;
     height: 14px;
     border-radius: 2px;

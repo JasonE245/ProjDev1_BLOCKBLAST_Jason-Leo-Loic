@@ -1,64 +1,64 @@
 // Couche de contrôle : relie la logique pure (game_logic.js) à l'affichage (display.js).
 // Cycle : action -> nouvel état -> réaffichage complet. Les effets de bord (localStorage)
 // vivent ici, jamais dans les deux autres fichiers.
-const BEST_SCORE_KEY = "blockblast-record";
-const THEME_KEY = "blockblast-theme";
+const CLE_RECORD = "blockblast-record";
+const CLE_THEME = "blockblast-theme";
 
-let state = createInitialState(8, PIECE_COLOR_COUNT);
-let bestScore = loadBestScore();
+let etat = creerEtatInitial(8, NB_COULEURS_PIECES);
+let record = litRecord();
 
-function loadBestScore() {
-    return Number(localStorage.getItem(BEST_SCORE_KEY)) || 0;
+function litRecord() {
+    return Number(localStorage.getItem(CLE_RECORD)) || 0;
 }
 
-function saveBestScoreIfBeaten(score) {
-    if (score <= bestScore) return;
-    bestScore = score;
-    localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+function enregistreRecordSiBattu(score) {
+    if (score <= record) return;
+    record = score;
+    localStorage.setItem(CLE_RECORD, String(record));
 }
 
-function render() {
-    renderGrid(state);
-    renderScore(state, bestScore);
-    renderPieceTray(state);
-    renderGameOver(state);
+function afficherTout() {
+    afficherGrille(etat);
+    afficherScore(etat, record);
+    afficherReserve(etat);
+    afficherFinDePartie(etat);
 }
 
-function handleDropPiece(pieceId, row, col) {
+function surPosePiece(idPiece, ligne, colonne) {
     // calculé AVANT la pose, sinon les lignes ont déjà disparu et il n'y a plus rien à animer
-    const piece = state.pieces.find((p) => p.id === pieceId);
+    const piece = etat.pieces.find((p) => p.id === idPiece);
     const cleared = piece
-        ? getLinesClearedBy(state, piece.shape, row, col)
-        : { rows: [], cols: [] };
+        ? lignesCasseesPar(etat, piece.forme, ligne, colonne)
+        : { lignes: [], colonnes: [] };
 
-    state = placePiece(state, pieceId, row, col);
-    saveBestScoreIfBeaten(state.score);
-    render();
-    animateClearedLines(state, cleared);
+    etat = poserPiece(etat, idPiece, ligne, colonne);
+    enregistreRecordSiBattu(etat.score);
+    afficherTout();
+    animerLignesCassees(etat, cleared);
 }
 
-function handleDebugToggle(row, col) {
-    state = toggleCell(state, row, col);
-    render();
+function surBasculeCase(ligne, colonne) {
+    etat = basculerCase(etat, ligne, colonne);
+    afficherTout();
 }
 
-function handleRestart() {
-    state = createInitialState(8, PIECE_COLOR_COUNT);
-    render();
+function surRejouer() {
+    etat = creerEtatInitial(8, NB_COULEURS_PIECES);
+    afficherTout();
 }
 
-function selectTheme(theme) {
-    applyTheme(theme);
-    localStorage.setItem(THEME_KEY, theme.name);
+function surChoixTheme(theme) {
+    appliquerTheme(theme);
+    localStorage.setItem(CLE_THEME, theme.nom);
 }
 
 // on retrouve le thème choisi la dernière fois, et à défaut le premier de la liste
-const savedTheme = themes.find((t) => t.name === localStorage.getItem(THEME_KEY));
-applyTheme(savedTheme || themes[0]);
+const themeEnregistre = themes.find((t) => t.nom === localStorage.getItem(CLE_THEME));
+appliquerTheme(themeEnregistre || themes[0]);
 
-document.getElementById("restart-button").addEventListener("click", handleRestart);
+document.getElementById("bouton-rejouer").addEventListener("click", surRejouer);
 
-renderThemePicker(selectTheme);
-initGridInteractions(handleDropPiece, handleDebugToggle);
-initDebugShortcut();
-render();
+afficherChoixTheme(surChoixTheme);
+initInteractionsGrille(surPosePiece, surBasculeCase);
+initRaccourciDebug();
+afficherTout();
