@@ -202,7 +202,7 @@ function afficherApercu(etat, forme, ligne, colonne) {
 
     const valide = peutPoser(etat.grille, forme, ligne, colonne);
 
-    for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
+    for (const [l, c] of casesDeLaForme(forme, ligne, colonne)) {
         // une forme survolée près d'un bord déborde de la grille : caseGrille ne trouve alors aucune case, et il n'y
         // a rien à marquer pour cette partie de la forme
         const element = caseGrille(l, c);
@@ -252,7 +252,7 @@ function animerLignesCassees(etat, cassees) {
  * :return: un objet {ligne, colonne}, éventuellement hors de la grille
  */
 function origineDeLaPose(forme, element, evenement) {
-    const taille = Forme.parNom(forme).taille();
+    const taille = tailleDeLaForme(forme);
 
     // position du curseur en nombre de cases, virgule comprise
     const ligneCurseur = Number(element.dataset.ligne) + evenement.offsetY / TAILLE_CASE;
@@ -381,9 +381,8 @@ function initRaccourciDebug() {
  * :return: l'élément de la page
  */
 function creerElementPiece(piece) {
-    const forme = Forme.parNom(piece.forme);
-    const taille = forme.taille();
-    const cases = forme.cases;
+    const taille = tailleDeLaForme(piece.forme);
+    const cases = FORMES[piece.forme];
 
     const element = document.createElement("div");
     element.className = "piece";
