@@ -11,61 +11,131 @@
 // l'avant et l'après d'un coup (voir surPosePiece dans main.js).
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// définition des formes, en coordonnées [ligne, colonne] à partir du coin haut-gauche (0, 0)
+// une forme est une liste de cases en coordonnées [ligne, colonne] à partir du coin haut-gauche (0, 0)
 // toute forme touche la ligne 0 et la colonne 0 : c'est ce qui permet de calculer sa taille avec un simple maximum
 // les cases n'ont pas besoin d'être collées, ce qui donne les diagonales sans code particulier
 // les tailles sont notées lignes x colonnes, comme les coordonnées
-const FORMES = {
-    bloc: [[0, 0]],
+//
+// les pièces et l'état du jeu ne retiennent que le nom de la forme (une simple chaîne) : on retrouve l'objet Forme
+// correspondant avec Forme.parNom()
+class Forme {
+    /**
+     * :param cases: liste de couples [ligne, colonne] relatifs au coin haut-gauche de la forme
+     */
+    constructor(cases) {
+        this.cases = cases;
+    }
 
-    ligne2_h: [[0, 0], [0, 1]],
-    ligne2_v: [[0, 0], [1, 0]],
-    ligne3_h: [[0, 0], [0, 1], [0, 2]],
-    ligne3_v: [[0, 0], [1, 0], [2, 0]],
-    ligne4_h: [[0, 0], [0, 1], [0, 2], [0, 3]],
-    ligne4_v: [[0, 0], [1, 0], [2, 0], [3, 0]],
-    ligne5_h: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]],
-    ligne5_v: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
+    /**
+     * nombre de cases de la forme, qui est aussi le nombre de points qu'elle rapporte une fois posée
+     */
+    get nbCases() {
+        return this.cases.length;
+    }
 
-    coin_0: [[0, 0], [0, 1], [1, 0]],
-    coin_90: [[0, 0], [0, 1], [1, 1]],
-    coin_180: [[0, 1], [1, 0], [1, 1]],
-    coin_270: [[0, 0], [1, 0], [1, 1]],
+    /**
+     * calcule la taille du rectangle qui contient la forme
+     * comme toute forme touche la ligne 0 et la colonne 0, le plus grand indice suffit
+     * :return: un objet {lignes, colonnes}
+     */
+    taille() {
+        let maxLigne = 0;
+        let maxColonne = 0;
 
-    carre_2x2: [[0, 0], [0, 1], [1, 0], [1, 1]],
-    carre_3x3: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]],
-    rect_2x3: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]],
-    rect_3x2: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]],
+        for (const [ligne, colonne] of this.cases) {
+            if (ligne > maxLigne) maxLigne = ligne;
+            if (colonne > maxColonne) maxColonne = colonne;
+        }
+        // +1 parce que les indices commencent à 0 : un indice maximum de 2 fait 3 cases
+        return { lignes: maxLigne + 1, colonnes: maxColonne + 1 };
+    }
 
-    l_0: [[0, 0], [1, 0], [2, 0], [2, 1]],
-    l_90: [[0, 0], [0, 1], [0, 2], [1, 0]],
-    l_180: [[0, 0], [0, 1], [1, 1], [2, 1]],
-    l_270: [[0, 2], [1, 0], [1, 1], [1, 2]],
+    /**
+     * calcule les cases réellement occupées par la forme posée à un endroit donné
+     * :param ligne: ligne du coin haut-gauche de la forme
+     * :param colonne: colonne du coin haut-gauche de la forme
+     * :return: liste de couples [ligne, colonne] en coordonnées de la grille
+     */
+    casesPosees(ligne, colonne) {
+        const cases = [];
 
-    j_0: [[0, 1], [1, 1], [2, 0], [2, 1]],
-    j_90: [[0, 0], [1, 0], [1, 1], [1, 2]],
-    j_180: [[0, 0], [0, 1], [1, 0], [2, 0]],
-    j_270: [[0, 0], [0, 1], [0, 2], [1, 2]],
+        // chaque case de la forme est décalée du coin haut-gauche où on la pose
+        for (const [decalageLigne, decalageColonne] of this.cases) {
+            cases.push([ligne + decalageLigne, colonne + decalageColonne]);
+        }
+        return cases;
+    }
 
-    t_0: [[0, 0], [0, 1], [0, 2], [1, 1]],
-    t_90: [[0, 1], [1, 0], [1, 1], [2, 1]],
-    t_180: [[0, 1], [1, 0], [1, 1], [1, 2]],
-    t_270: [[0, 0], [1, 0], [1, 1], [2, 0]],
+    /**
+     * retrouve une forme à partir de son nom
+     * :param nom: nom de la forme, tel qu'il apparaît dans Forme.TOUTES
+     * :return: l'objet Forme correspondant
+     */
+    static parNom(nom) {
+        return Forme.TOUTES[nom];
+    }
 
-    s_h: [[0, 1], [0, 2], [1, 0], [1, 1]],
-    s_v: [[0, 0], [1, 0], [1, 1], [2, 1]],
-    z_h: [[0, 0], [0, 1], [1, 1], [1, 2]],
-    z_v: [[0, 1], [1, 0], [1, 1], [2, 0]],
+    /**
+     * :return: la liste des noms de toutes les formes
+     */
+    static noms() {
+        return Object.keys(Forme.TOUTES);
+    }
+}
 
-    grand_l_0: [[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]],
-    grand_l_90: [[0, 0], [0, 1], [0, 2], [1, 0], [2, 0]],
-    grand_l_180: [[0, 0], [0, 1], [0, 2], [1, 2], [2, 2]],
-    grand_l_270: [[0, 2], [1, 2], [2, 0], [2, 1], [2, 2]],
+// catalogue de toutes les formes du jeu, rangées par nom
+// il est rempli après la classe, parce que chaque entrée a besoin que Forme soit déjà définie
+Forme.TOUTES = {
+    bloc: new Forme([[0, 0]]),
 
-    diagonale2_montante: [[0, 1], [1, 0]],
-    diagonale2_descendante: [[0, 0], [1, 1]],
-    diagonale3_montante: [[0, 2], [1, 1], [2, 0]],
-    diagonale3_descendante: [[0, 0], [1, 1], [2, 2]],
+    ligne2_h: new Forme([[0, 0], [0, 1]]),
+    ligne2_v: new Forme([[0, 0], [1, 0]]),
+    ligne3_h: new Forme([[0, 0], [0, 1], [0, 2]]),
+    ligne3_v: new Forme([[0, 0], [1, 0], [2, 0]]),
+    ligne4_h: new Forme([[0, 0], [0, 1], [0, 2], [0, 3]]),
+    ligne4_v: new Forme([[0, 0], [1, 0], [2, 0], [3, 0]]),
+    ligne5_h: new Forme([[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]]),
+    ligne5_v: new Forme([[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]),
+
+    coin_0: new Forme([[0, 0], [0, 1], [1, 0]]),
+    coin_90: new Forme([[0, 0], [0, 1], [1, 1]]),
+    coin_180: new Forme([[0, 1], [1, 0], [1, 1]]),
+    coin_270: new Forme([[0, 0], [1, 0], [1, 1]]),
+
+    carre_2x2: new Forme([[0, 0], [0, 1], [1, 0], [1, 1]]),
+    carre_3x3: new Forme([[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]),
+    rect_2x3: new Forme([[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]),
+    rect_3x2: new Forme([[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]]),
+
+    l_0: new Forme([[0, 0], [1, 0], [2, 0], [2, 1]]),
+    l_90: new Forme([[0, 0], [0, 1], [0, 2], [1, 0]]),
+    l_180: new Forme([[0, 0], [0, 1], [1, 1], [2, 1]]),
+    l_270: new Forme([[0, 2], [1, 0], [1, 1], [1, 2]]),
+
+    j_0: new Forme([[0, 1], [1, 1], [2, 0], [2, 1]]),
+    j_90: new Forme([[0, 0], [1, 0], [1, 1], [1, 2]]),
+    j_180: new Forme([[0, 0], [0, 1], [1, 0], [2, 0]]),
+    j_270: new Forme([[0, 0], [0, 1], [0, 2], [1, 2]]),
+
+    t_0: new Forme([[0, 0], [0, 1], [0, 2], [1, 1]]),
+    t_90: new Forme([[0, 1], [1, 0], [1, 1], [2, 1]]),
+    t_180: new Forme([[0, 1], [1, 0], [1, 1], [1, 2]]),
+    t_270: new Forme([[0, 0], [1, 0], [1, 1], [2, 0]]),
+
+    s_h: new Forme([[0, 1], [0, 2], [1, 0], [1, 1]]),
+    s_v: new Forme([[0, 0], [1, 0], [1, 1], [2, 1]]),
+    z_h: new Forme([[0, 0], [0, 1], [1, 1], [1, 2]]),
+    z_v: new Forme([[0, 1], [1, 0], [1, 1], [2, 0]]),
+
+    grand_l_0: new Forme([[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]),
+    grand_l_90: new Forme([[0, 0], [0, 1], [0, 2], [1, 0], [2, 0]]),
+    grand_l_180: new Forme([[0, 0], [0, 1], [0, 2], [1, 2], [2, 2]]),
+    grand_l_270: new Forme([[0, 2], [1, 2], [2, 0], [2, 1], [2, 2]]),
+
+    diagonale2_montante: new Forme([[0, 1], [1, 0]]),
+    diagonale2_descendante: new Forme([[0, 0], [1, 1]]),
+    diagonale3_montante: new Forme([[0, 2], [1, 1], [2, 0]]),
+    diagonale3_descendante: new Forme([[0, 0], [1, 1], [2, 2]]),
 };
 
 // nombre de pièces proposées au joueur en même temps
@@ -84,45 +154,6 @@ const PIECES_PAR_LOT = 3;
  */
 function etatAvec(etat, changements) {
     return { ...etat, ...changements };
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// formes
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * calcule les cases réellement occupées par une forme posée à un endroit donné
- * :param forme: nom de la forme, tel qu'il apparaît dans FORMES
- * :param ligne: ligne du coin haut-gauche de la forme
- * :param colonne: colonne du coin haut-gauche de la forme
- * :return: liste de couples [ligne, colonne] en coordonnées de la grille
- */
-function casesDeLaForme(forme, ligne, colonne) {
-    const cases = [];
-
-    // chaque case de la forme est décalée du coin haut-gauche où on la pose
-    for (const [decalageLigne, decalageColonne] of FORMES[forme]) {
-        cases.push([ligne + decalageLigne, colonne + decalageColonne]);
-    }
-    return cases;
-}
-
-/**
- * calcule la taille du rectangle qui contient la forme
- * comme toute forme touche la ligne 0 et la colonne 0, le plus grand indice suffit
- * :param forme: nom de la forme, tel qu'il apparaît dans FORMES
- * :return: un objet {lignes, colonnes}
- */
-function tailleDeLaForme(forme) {
-    let maxLigne = 0;
-    let maxColonne = 0;
-
-    for (const [ligne, colonne] of FORMES[forme]) {
-        if (ligne > maxLigne) maxLigne = ligne;
-        if (colonne > maxColonne) maxColonne = colonne;
-    }
-    // +1 parce que les indices commencent à 0 : un indice maximum de 2 fait 3 cases
-    return { lignes: maxLigne + 1, colonnes: maxColonne + 1 };
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -188,7 +219,7 @@ function grilleEstVide(grille) {
 function grilleAvecForme(grille, forme, ligne, colonne, valeur) {
     const nouvelle = copierGrille(grille);
 
-    for (const [l, c] of casesDeLaForme(forme, ligne, colonne)) {
+    for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
         nouvelle[l][c] = valeur;
     }
     return nouvelle;
@@ -274,7 +305,7 @@ function chercherLignesPleines(grille) {
 function peutPoser(grille, forme, ligne, colonne) {
     const taille = grille.length;
 
-    for (const [l, c] of casesDeLaForme(forme, ligne, colonne)) {
+    for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
         // la case sort de la grille
         if (l < 0 || l >= taille || c < 0 || c >= taille) return false;
         // la case est déjà occupée
@@ -507,11 +538,11 @@ function tirerLotPosable(etat, nombre) {
     // formes qui rentrent encore quelque part, calculées une seule fois puisque la grille ne change pas entre
     // deux essais
     const posables = [];
-    for (const forme of Object.keys(FORMES)) {
+    for (const forme of Forme.noms()) {
         if (peutPoserQuelquePart(grille, forme)) posables.push(forme);
     }
 
-    const sac = construireSacDeFormes(posables.length > 0 ? posables : Object.keys(FORMES));
+    const sac = construireSacDeFormes(posables.length > 0 ? posables : Forme.noms());
     const chanceTriple = grilleEstVide(grille) ? CHANCE_TRIPLE_GRILLE_VIDE : CHANCE_TRIPLE_EN_JEU;
 
     let pieces;
@@ -611,7 +642,7 @@ function poserPiece(etat, idPiece, ligne, colonne) {
     const posee = etatAvec(etat, {
         grille: grilleAvecForme(etat.grille, piece.forme, ligne, colonne, piece.couleur + 1),
         pieces: reserve,
-        score: etat.score + FORMES[piece.forme].length,
+        score: etat.score + Forme.parNom(piece.forme).nbCases,
     });
 
     // 2. les lignes et colonnes devenues pleines sautent et rapportent leurs points
@@ -662,8 +693,7 @@ function basculerCase(etat, ligne, colonne) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 if (typeof module !== "undefined") {
     module.exports = {
-        FORMES, GROSSES_FORMES, PIECES_PAR_LOT,
-        casesDeLaForme, tailleDeLaForme,
+        Forme, GROSSES_FORMES, PIECES_PAR_LOT,
         creerGrilleVide, copierGrille, chercherLignesPleines, peutPoser, peutPoserQuelquePart,
         lignesCasseesPar, peutToutPoserDansUnOrdre, construireSacDeFormes,
         pointsDeSuppression, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
