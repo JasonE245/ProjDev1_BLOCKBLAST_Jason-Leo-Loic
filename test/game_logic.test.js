@@ -12,8 +12,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
-    Forme, GROSSES_FORMES, PIECES_PAR_LOT,
-    creerGrilleVide, chercherLignesPleines, peutPoser,
+    FORMES, GROSSES_FORMES, PIECES_PAR_LOT,
+    tailleDeLaForme, creerGrilleVide, chercherLignesPleines, peutPoser,
     lignesCasseesPar, peutToutPoserDansUnOrdre, construireSacDeFormes,
     pointsDeSuppression, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
 } = require("../game_logic.js");
@@ -47,8 +47,7 @@ function grilleLignePresquePleine() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 test("toute forme touche la ligne 0 et la colonne 0", () => {
-    for (const nom of Forme.noms()) {
-        const cases = Forme.parNom(nom).cases;
+    for (const [nom, cases] of Object.entries(FORMES)) {
         let minLigne = 99;
         let minColonne = 99;
 
@@ -64,8 +63,7 @@ test("toute forme touche la ligne 0 et la colonne 0", () => {
 test("aucune forme n'est définie deux fois", () => {
     const vues = new Map();
 
-    for (const nom of Forme.noms()) {
-        const cases = Forme.parNom(nom).cases;
+    for (const [nom, cases] of Object.entries(FORMES)) {
         // on trie pour que deux définitions identiques écrites dans un ordre différent se ressemblent
         const cle = cases.map((c) => c.join(",")).sort().join(" ");
         assert.equal(vues.get(cle), undefined, `${nom} est identique à ${vues.get(cle)}`);
@@ -75,15 +73,15 @@ test("aucune forme n'est définie deux fois", () => {
 
 test("les grosses formes existent bien", () => {
     for (const nom of GROSSES_FORMES) {
-        assert.ok(Forme.parNom(nom), `forme inconnue : ${nom}`);
+        assert.ok(FORMES[nom], `forme inconnue : ${nom}`);
     }
 });
 
-test("taille() donne les dimensions en lignes et colonnes", () => {
-    assert.deepEqual(Forme.parNom("bloc").taille(), { lignes: 1, colonnes: 1 });
-    assert.deepEqual(Forme.parNom("ligne5_h").taille(), { lignes: 1, colonnes: 5 });
-    assert.deepEqual(Forme.parNom("rect_2x3").taille(), { lignes: 2, colonnes: 3 });
-    assert.deepEqual(Forme.parNom("rect_3x2").taille(), { lignes: 3, colonnes: 2 });
+test("tailleDeLaForme donne les dimensions en lignes et colonnes", () => {
+    assert.deepEqual(tailleDeLaForme("bloc"), { lignes: 1, colonnes: 1 });
+    assert.deepEqual(tailleDeLaForme("ligne5_h"), { lignes: 1, colonnes: 5 });
+    assert.deepEqual(tailleDeLaForme("rect_2x3"), { lignes: 2, colonnes: 3 });
+    assert.deepEqual(tailleDeLaForme("rect_3x2"), { lignes: 3, colonnes: 2 });
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

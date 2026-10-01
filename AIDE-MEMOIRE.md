@@ -13,12 +13,12 @@ Les numéros de ligne correspondent à la branche `feature/lisibilite`.
 
 | Fichier | Lignes | Rôle en une phrase |
 | --- | --- | --- |
-| `game_logic.js` | 700 | Les règles. Ne touche jamais à la page, ne modifie jamais ce qu'il reçoit. |
-| `display.js` | 483 | Tout ce qui écrit dans la page. Lit l'état, ne le modifie jamais. |
+| `game_logic.js` | 671 | Les règles. Ne touche jamais à la page, ne modifie jamais ce qu'il reçoit. |
+| `display.js` | 482 | Tout ce qui écrit dans la page. Lit l'état, ne le modifie jamais. |
 | `main.js` | 176 | Relie les deux. Le seul endroit qui remplace `etat` et qui écrit dans le navigateur. |
 | `index.html` | 54 | La structure seule. Tous les conteneurs sont vides au départ. |
 | `style.css` | 302 | La mise en forme. Les couleurs sont des variables posées par le thème. |
-| `test/game_logic.test.js` | 244 | 19 tests des règles, lancés par `npm test`. |
+| `test/game_logic.test.js` | 242 | 19 tests des règles, lancés par `npm test`. |
 
 La règle de dépendance, à retenir : **`main.js` connaît les deux autres, `display.js`
 connaît `game_logic.js`, et `game_logic.js` ne connaît personne.** C'est pour ça qu'on
@@ -46,45 +46,45 @@ Une seule variable, `etat`, déclarée dans `main.js` ligne 86. Tout le reste en
 
 | Ligne | Quoi |
 | --- | --- |
-| 21 | `Forme` — la classe des formes ; `Forme.TOUTES` (ligne 86) contient les 41 formes, en coordonnées `[ligne, colonne]` |
-| 141 | `PIECES_PAR_LOT` = 3 |
-| 370-375 | Le barème : `POINTS_PAR_LIGNE`, `PLAFOND_COMBO_PAR_LIGNE`, `MAX_LIGNES_COMPTEES` |
-| 410-418 | Le tirage : chances de triplet, poids des grosses formes, nombre d'essais |
+| 18 | `FORMES` — les 41 formes, en coordonnées `[ligne, colonne]` |
+| 72 | `PIECES_PAR_LOT` = 3 |
+| 340-345 | Le barème : `POINTS_PAR_LIGNE`, `PLAFOND_COMBO_PAR_LIGNE`, `MAX_LIGNES_COMPTEES` |
+| 380-388 | Le tirage : chances de triplet, poids des grosses formes, nombre d'essais |
 
 **Les outils sur la grille** — aucun ne modifie ce qu'il reçoit
 
 | Ligne | Fonction | Fait quoi |
 | --- | --- | --- |
-| 48 | `Forme.taille` | Le rectangle qui contient la forme, en lignes et colonnes |
-| 66 | `Forme.casesPosees` | Les cases occupées par une forme posée à tel endroit |
-| 154 | `etatAvec` | Copie l'état avec quelques champs remplacés. Le seul `...` du projet. |
-| 167 | `creerGrilleVide` | Une grille carrée de zéros |
-| 185 | `copierGrille` | Une copie indépendante |
-| 218 | `grilleAvecForme` | Copie avec une forme dessinée dessus |
-| 233 | `grilleSansLignes` | Copie avec les lignes et colonnes indiquées vidées |
-| 283 | `chercherLignesPleines` | Les index des lignes et colonnes entièrement occupées |
-| 304 | `peutPoser` | Est-ce que cette forme rentre ici ? |
-| 322 | `peutPoserQuelquePart` | Est-ce qu'elle rentre quelque part ? |
-| 340 | `lignesCasseesPar` | Ce que cette pose ferait sauter, sans rien poser |
+| 85 | `etatAvec` | Copie l'état avec quelques champs remplacés. Le seul `...` du projet. |
+| 100 | `casesDeLaForme` | Les cases occupées par une forme posée à tel endroit |
+| 116 | `tailleDeLaForme` | Le rectangle qui contient la forme, en lignes et colonnes |
+| 137 | `creerGrilleVide` | Une grille carrée de zéros |
+| 155 | `copierGrille` | Une copie indépendante |
+| 188 | `grilleAvecForme` | Copie avec une forme dessinée dessus |
+| 203 | `grilleSansLignes` | Copie avec les lignes et colonnes indiquées vidées |
+| 253 | `chercherLignesPleines` | Les index des lignes et colonnes entièrement occupées |
+| 274 | `peutPoser` | Est-ce que cette forme rentre ici ? |
+| 292 | `peutPoserQuelquePart` | Est-ce qu'elle rentre quelque part ? |
+| 310 | `lignesCasseesPar` | Ce que cette pose ferait sauter, sans rien poser |
 
 **Le tirage des pièces**
 
 | Ligne | Fonction | Fait quoi |
 | --- | --- | --- |
-| 427 | `construireSacDeFormes` | Le sac où les grosses formes sont en 5 exemplaires |
-| 460 | `creerPieces` | Tire un lot au hasard, sans vérifier |
-| 495 | `peutToutPoserDansUnOrdre` | **La fonction récursive.** Vérifie qu'un lot est posable en entier |
-| 534 | `tirerLotPosable` | Tire jusqu'à 40 lots et garde le premier qui passe la vérification |
+| 397 | `construireSacDeFormes` | Le sac où les grosses formes sont en 5 exemplaires |
+| 430 | `creerPieces` | Tire un lot au hasard, sans vérifier |
+| 465 | `peutToutPoserDansUnOrdre` | **La fonction récursive.** Vérifie qu'un lot est posable en entier |
+| 504 | `tirerLotPosable` | Tire jusqu'à 40 lots et garde le premier qui passe la vérification |
 
 **Le déroulement d'une partie**
 
 | Ligne | Fonction | Fait quoi |
 | --- | --- | --- |
-| 570 | `creerEtatInitial` | L'état de départ, avec son premier lot |
-| 603 | `supprimerLignesPleines` | Vide les lignes, ajoute les points, monte le combo |
-| 627 | `poserPiece` | **Le cœur.** Pose, compte, nettoie, décide du combo, retire un lot |
-| 667 | `partieTerminee` | Plus aucune pièce ne rentre nulle part |
-| 682 | `basculerCase` | Remplit ou vide une case à la main (mode debug) |
+| 540 | `creerEtatInitial` | L'état de départ, avec son premier lot |
+| 573 | `supprimerLignesPleines` | Vide les lignes, ajoute les points, monte le combo |
+| 597 | `poserPiece` | **Le cœur.** Pose, compte, nettoie, décide du combo, retire un lot |
+| 637 | `partieTerminee` | Plus aucune pièce ne rentre nulle part |
+| 652 | `basculerCase` | Remplit ou vide une case à la main (mode debug) |
 
 ## Où est quoi — `display.js`
 
@@ -104,9 +104,9 @@ Une seule variable, `etat`, déclarée dans `main.js` ligne 86. Tout le reste en
 | 290 | `pieceGlisseeSur` | Quelle case, quelle pièce |
 | 306-341 | `surSurvolGlisser`, `surLacher`, `surClicDebug` | Les trois gestionnaires |
 | 383 | `creerElementPiece` | Fabrique une pièce de la réserve, glissable |
-| 440 | `afficherReserve` | Redessine les trois pièces |
-| 461 | `afficherScore` | Score, record, combo |
-| 476 | `afficherFinDePartie` | Montre ou cache l'écran de fin |
+| 439 | `afficherReserve` | Redessine les trois pièces |
+| 460 | `afficherScore` | Score, record, combo |
+| 475 | `afficherFinDePartie` | Montre ou cache l'écran de fin |
 
 ## Où est quoi — `main.js`
 
@@ -158,12 +158,12 @@ main.js     surPosePiece(id, ligne, colonne)
 
 | Je veux... | Fichier | Endroit |
 | --- | --- | --- |
-| Ajouter ou retirer une forme | `game_logic.js` | `Forme.TOUTES`, ligne 86 |
-| Changer le barème de points | `game_logic.js` | lignes 370-375 et `pointsDeSuppression` |
+| Ajouter ou retirer une forme | `game_logic.js` | `FORMES`, ligne 18 |
+| Changer le barème de points | `game_logic.js` | lignes 340-345 et `pointsDeSuppression` |
 | Changer la taille de la grille | `main.js` | `TAILLE_GRILLE`, ligne 79 |
 | Ajouter un thème ou une couleur | `display.js` | `themes`, ligne 18 — rien d'autre à toucher |
 | Changer la taille des cases | `display.js` | `TAILLE_CASE`, ligne 87 |
-| Changer la fréquence des grosses formes | `game_logic.js` | `POIDS_GROSSE_FORME`, ligne 415 |
+| Changer la fréquence des grosses formes | `game_logic.js` | `POIDS_GROSSE_FORME`, ligne 385 |
 | Changer l'animation de suppression | `style.css` | `@keyframes eclair-suppression` |
 | Changer le mot du mode debug | `display.js` | `CODE_DEBUG`, ligne 351 |
 | Ajouter un test | `test/game_logic.test.js` | puis `npm test` |
