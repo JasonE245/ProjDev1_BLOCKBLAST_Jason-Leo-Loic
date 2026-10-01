@@ -81,61 +81,62 @@ class Forme {
     static noms() {
         return Object.keys(Forme.TOUTES);
     }
-
-    // catalogue de toutes les formes du jeu, rangées par nom
-    static TOUTES = {
-        bloc: new Forme([[0, 0]]),
-
-        ligne2_h: new Forme([[0, 0], [0, 1]]),
-        ligne2_v: new Forme([[0, 0], [1, 0]]),
-        ligne3_h: new Forme([[0, 0], [0, 1], [0, 2]]),
-        ligne3_v: new Forme([[0, 0], [1, 0], [2, 0]]),
-        ligne4_h: new Forme([[0, 0], [0, 1], [0, 2], [0, 3]]),
-        ligne4_v: new Forme([[0, 0], [1, 0], [2, 0], [3, 0]]),
-        ligne5_h: new Forme([[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]]),
-        ligne5_v: new Forme([[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]),
-
-        coin_0: new Forme([[0, 0], [0, 1], [1, 0]]),
-        coin_90: new Forme([[0, 0], [0, 1], [1, 1]]),
-        coin_180: new Forme([[0, 1], [1, 0], [1, 1]]),
-        coin_270: new Forme([[0, 0], [1, 0], [1, 1]]),
-
-        carre_2x2: new Forme([[0, 0], [0, 1], [1, 0], [1, 1]]),
-        carre_3x3: new Forme([[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]),
-        rect_2x3: new Forme([[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]),
-        rect_3x2: new Forme([[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]]),
-
-        l_0: new Forme([[0, 0], [1, 0], [2, 0], [2, 1]]),
-        l_90: new Forme([[0, 0], [0, 1], [0, 2], [1, 0]]),
-        l_180: new Forme([[0, 0], [0, 1], [1, 1], [2, 1]]),
-        l_270: new Forme([[0, 2], [1, 0], [1, 1], [1, 2]]),
-
-        j_0: new Forme([[0, 1], [1, 1], [2, 0], [2, 1]]),
-        j_90: new Forme([[0, 0], [1, 0], [1, 1], [1, 2]]),
-        j_180: new Forme([[0, 0], [0, 1], [1, 0], [2, 0]]),
-        j_270: new Forme([[0, 0], [0, 1], [0, 2], [1, 2]]),
-
-        t_0: new Forme([[0, 0], [0, 1], [0, 2], [1, 1]]),
-        t_90: new Forme([[0, 1], [1, 0], [1, 1], [2, 1]]),
-        t_180: new Forme([[0, 1], [1, 0], [1, 1], [1, 2]]),
-        t_270: new Forme([[0, 0], [1, 0], [1, 1], [2, 0]]),
-
-        s_h: new Forme([[0, 1], [0, 2], [1, 0], [1, 1]]),
-        s_v: new Forme([[0, 0], [1, 0], [1, 1], [2, 1]]),
-        z_h: new Forme([[0, 0], [0, 1], [1, 1], [1, 2]]),
-        z_v: new Forme([[0, 1], [1, 0], [1, 1], [2, 0]]),
-
-        grand_l_0: new Forme([[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]),
-        grand_l_90: new Forme([[0, 0], [0, 1], [0, 2], [1, 0], [2, 0]]),
-        grand_l_180: new Forme([[0, 0], [0, 1], [0, 2], [1, 2], [2, 2]]),
-        grand_l_270: new Forme([[0, 2], [1, 2], [2, 0], [2, 1], [2, 2]]),
-
-        diagonale2_montante: new Forme([[0, 1], [1, 0]]),
-        diagonale2_descendante: new Forme([[0, 0], [1, 1]]),
-        diagonale3_montante: new Forme([[0, 2], [1, 1], [2, 0]]),
-        diagonale3_descendante: new Forme([[0, 0], [1, 1], [2, 2]]),
-    };
 }
+
+// catalogue de toutes les formes du jeu, rangées par nom
+// il est rempli après la classe, parce que chaque entrée a besoin que Forme soit déjà définie
+Forme.TOUTES = {
+    bloc: new Forme([[0, 0]]),
+
+    ligne2_h: new Forme([[0, 0], [0, 1]]),
+    ligne2_v: new Forme([[0, 0], [1, 0]]),
+    ligne3_h: new Forme([[0, 0], [0, 1], [0, 2]]),
+    ligne3_v: new Forme([[0, 0], [1, 0], [2, 0]]),
+    ligne4_h: new Forme([[0, 0], [0, 1], [0, 2], [0, 3]]),
+    ligne4_v: new Forme([[0, 0], [1, 0], [2, 0], [3, 0]]),
+    ligne5_h: new Forme([[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]]),
+    ligne5_v: new Forme([[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]),
+
+    coin_0: new Forme([[0, 0], [0, 1], [1, 0]]),
+    coin_90: new Forme([[0, 0], [0, 1], [1, 1]]),
+    coin_180: new Forme([[0, 1], [1, 0], [1, 1]]),
+    coin_270: new Forme([[0, 0], [1, 0], [1, 1]]),
+
+    carre_2x2: new Forme([[0, 0], [0, 1], [1, 0], [1, 1]]),
+    carre_3x3: new Forme([[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]),
+    rect_2x3: new Forme([[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]),
+    rect_3x2: new Forme([[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]]),
+
+    l_0: new Forme([[0, 0], [1, 0], [2, 0], [2, 1]]),
+    l_90: new Forme([[0, 0], [0, 1], [0, 2], [1, 0]]),
+    l_180: new Forme([[0, 0], [0, 1], [1, 1], [2, 1]]),
+    l_270: new Forme([[0, 2], [1, 0], [1, 1], [1, 2]]),
+
+    j_0: new Forme([[0, 1], [1, 1], [2, 0], [2, 1]]),
+    j_90: new Forme([[0, 0], [1, 0], [1, 1], [1, 2]]),
+    j_180: new Forme([[0, 0], [0, 1], [1, 0], [2, 0]]),
+    j_270: new Forme([[0, 0], [0, 1], [0, 2], [1, 2]]),
+
+    t_0: new Forme([[0, 0], [0, 1], [0, 2], [1, 1]]),
+    t_90: new Forme([[0, 1], [1, 0], [1, 1], [2, 1]]),
+    t_180: new Forme([[0, 1], [1, 0], [1, 1], [1, 2]]),
+    t_270: new Forme([[0, 0], [1, 0], [1, 1], [2, 0]]),
+
+    s_h: new Forme([[0, 1], [0, 2], [1, 0], [1, 1]]),
+    s_v: new Forme([[0, 0], [1, 0], [1, 1], [2, 1]]),
+    z_h: new Forme([[0, 0], [0, 1], [1, 1], [1, 2]]),
+    z_v: new Forme([[0, 1], [1, 0], [1, 1], [2, 0]]),
+
+    grand_l_0: new Forme([[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]),
+    grand_l_90: new Forme([[0, 0], [0, 1], [0, 2], [1, 0], [2, 0]]),
+    grand_l_180: new Forme([[0, 0], [0, 1], [0, 2], [1, 2], [2, 2]]),
+    grand_l_270: new Forme([[0, 2], [1, 2], [2, 0], [2, 1], [2, 2]]),
+
+    diagonale2_montante: new Forme([[0, 1], [1, 0]]),
+    diagonale2_descendante: new Forme([[0, 0], [1, 1]]),
+    diagonale3_montante: new Forme([[0, 2], [1, 1], [2, 0]]),
+    diagonale3_descendante: new Forme([[0, 0], [1, 1], [2, 2]]),
+};
 
 // nombre de pièces proposées au joueur en même temps
 const PIECES_PAR_LOT = 3;
