@@ -55,17 +55,17 @@ Une seule variable, `etat`, déclarée dans `main.js` ligne 86. Tout le reste en
 
 | Ligne | Fonction | Fait quoi |
 | --- | --- | --- |
-| 48 | `Forme.taille` | Le rectangle qui contient la forme, en lignes et colonnes |
-| 66 | `Forme.casesPosees` | Les cases occupées par une forme posée à tel endroit |
-| 155 | `etatAvec` | Copie l'état avec quelques champs remplacés. Le seul `...` du projet. |
+| 48 | `Forme.calculerTaille` | Le rectangle qui contient la forme, en lignes et colonnes |
+| 66 | `Forme.calculerCasesPosees` | Les cases occupées par une forme posée à tel endroit |
+| 155 | `creerEtatAvec` | Copie l'état avec quelques champs remplacés. Le seul `...` du projet. |
 | 168 | `creerGrilleVide` | Une grille carrée de zéros |
 | 186 | `copierGrille` | Une copie indépendante |
-| 219 | `grilleAvecForme` | Copie avec une forme dessinée dessus |
-| 234 | `grilleSansLignes` | Copie avec les lignes et colonnes indiquées vidées |
+| 219 | `creerGrilleAvecForme` | Copie avec une forme dessinée dessus |
+| 234 | `creerGrilleSansLignes` | Copie avec les lignes et colonnes indiquées vidées |
 | 284 | `chercherLignesPleines` | Les index des lignes et colonnes entièrement occupées |
 | 305 | `peutPoser` | Est-ce que cette forme rentre ici ? |
 | 323 | `peutPoserQuelquePart` | Est-ce qu'elle rentre quelque part ? |
-| 341 | `lignesCasseesPar` | Ce que cette pose ferait sauter, sans rien poser |
+| 341 | `chercherLignesCasseesPar` | Ce que cette pose ferait sauter, sans rien poser |
 
 **Le tirage des pièces**
 
@@ -83,7 +83,7 @@ Une seule variable, `etat`, déclarée dans `main.js` ligne 86. Tout le reste en
 | 571 | `creerEtatInitial` | L'état de départ, avec son premier lot |
 | 604 | `supprimerLignesPleines` | Vide les lignes, ajoute les points, monte le combo |
 | 628 | `poserPiece` | **Le cœur.** Pose, compte, nettoie, décide du combo, retire un lot |
-| 668 | `partieTerminee` | Plus aucune pièce ne rentre nulle part |
+| 668 | `estPartieTerminee` | Plus aucune pièce ne rentre nulle part |
 | 683 | `basculerCase` | Remplit ou vide une case à la main (mode debug) |
 
 ## Où est quoi — `display.js`
@@ -99,10 +99,10 @@ Une seule variable, `etat`, déclarée dans `main.js` ligne 86. Tout le reste en
 | 186 | `effacerApercu` | Enlève les marques d'aperçu |
 | 200 | `afficherApercu` | Montre où la pièce tomberait et ce que ça casserait |
 | 231 | `animerLignesCassees` | Fait clignoter les lignes qui viennent de sauter |
-| 254 | `origineDeLaPose` | Traduit la position du curseur en coin haut-gauche de la forme |
-| 277 | `initInteractionsGrille` | Branche les écouteurs, **une seule fois** |
-| 290 | `pieceGlisseeSur` | Quelle case, quelle pièce |
-| 306-341 | `surSurvolGlisser`, `surLacher`, `surClicDebug` | Les trois gestionnaires |
+| 254 | `calculerOrigineDePose` | Traduit la position du curseur en coin haut-gauche de la forme |
+| 277 | `initialiserInteractionsGrille` | Branche les écouteurs, **une seule fois** |
+| 290 | `trouverPieceGlisseeSur` | Quelle case, quelle pièce |
+| 306-341 | `gererSurvolGlisser`, `gererLacher`, `gererClicDebug` | Les trois gestionnaires |
 | 383 | `creerElementPiece` | Fabrique une pièce de la réserve, glissable |
 | 440 | `afficherReserve` | Redessine les trois pièces |
 | 461 | `afficherScore` | Score, record, combo |
@@ -118,10 +118,10 @@ premier quand on découvre le code.
 | 86 | `etat` — l'état de la partie |
 | 89 | `record` — relu depuis le navigateur |
 | 97 | `afficherTout` — redessine les quatre morceaux de la page |
-| 111 | `surPosePiece` — appelée quand le joueur lâche une pièce |
-| 136 | `surBasculeCase` — clic en mode debug |
-| 145 | `surRejouer` — bouton Rejouer |
-| 155 | `surChoixTheme` — choix d'un thème |
+| 111 | `gererPosePiece` — appelée quand le joueur lâche une pièce |
+| 136 | `gererBasculeCase` — clic en mode debug |
+| 145 | `gererRejouer` — bouton Rejouer |
+| 155 | `gererChoixTheme` — choix d'un thème |
 | 165 et suivantes | Le démarrage : thème, écouteurs, premier affichage |
 
 ## Le chemin d'un coup, de bout en bout
@@ -130,20 +130,20 @@ premier quand on découvre le code.
 le joueur lâche une pièce sur la grille
         |
         v
-display.js  surLacher()                     l'écouteur posé sur #grille
+display.js  gererLacher()                   l'écouteur posé sur #grille
         |                                   retrouve la case et la pièce
         v
-display.js  origineDeLaPose()               position du curseur -> coin de la forme
+display.js  calculerOrigineDePose()         position du curseur -> coin de la forme
         |
         v
-main.js     surPosePiece(id, ligne, colonne)
+main.js     gererPosePiece(id, ligne, colonne)
         |
-        +-- lignesCasseesPar()              AVANT la pose, pour l'animation
+        +-- chercherLignesCasseesPar()      AVANT la pose, pour l'animation
         |
         +-- poserPiece()                    renvoie un NOUVEL état
         |        |
         |        +-- peutPoser()            pose valide ?
-        |        +-- grilleAvecForme()      dessine la pièce
+        |        +-- creerGrilleAvecForme() dessine la pièce
         |        +-- supprimerLignesPleines()   vide, compte, monte le combo
         |        +-- tirerLotPosable()      seulement si la réserve est vide
         |
@@ -159,7 +159,7 @@ main.js     surPosePiece(id, ligne, colonne)
 | Je veux... | Fichier | Endroit |
 | --- | --- | --- |
 | Ajouter ou retirer une forme | `game_logic.js` | `Forme.TOUTES`, ligne 88 |
-| Changer le barème de points | `game_logic.js` | lignes 371-376 et `pointsDeSuppression` |
+| Changer le barème de points | `game_logic.js` | lignes 371-376 et `calculerPointsDeSuppression` |
 | Changer la taille de la grille | `main.js` | `TAILLE_GRILLE`, ligne 79 |
 | Ajouter un thème ou une couleur | `display.js` | `themes`, ligne 18 — rien d'autre à toucher |
 | Changer la taille des cases | `display.js` | `TAILLE_CASE`, ligne 87 |
@@ -197,7 +197,7 @@ et c'est beaucoup plus simple à suivre.
 **2. L'état qu'on ne modifie jamais**
 
 Aucune fonction des règles n'écrit dans l'objet qu'elle reçoit : elle en renvoie une
-copie modifiée, fabriquée par `etatAvec`.
+copie modifiée, fabriquée par `creerEtatAvec`.
 
 L'exemple concret à donner si on demande à quoi ça sert : avant de poser une pièce, on
 calcule quelles lignes vont sauter, pour pouvoir les faire clignoter après. Si

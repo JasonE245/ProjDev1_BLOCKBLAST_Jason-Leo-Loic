@@ -7,17 +7,10 @@
 // Ce fichier contient les règles du jeu. Aucune fonction ici ne touche à l'affichage.
 //
 // Règle du fichier : on ne modifie jamais l'état ni la grille qu'on reçoit, on en fabrique une copie modifiée.
-// C'est le rôle de la fonction etatAvec(). L'ancien état reste donc intact, ce qui permet par exemple de comparer
-// l'avant et l'après d'un coup (voir surPosePiece dans main.js).
+// C'est le rôle de la fonction creerEtatAvec(). L'ancien état reste donc intact, ce qui permet de comparer
+// l'avant et l'après d'un coup (voir gererPosePiece dans main.js).
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// une forme est une liste de cases en coordonnées [ligne, colonne] à partir du coin haut-gauche (0, 0)
-// toute forme touche la ligne 0 et la colonne 0 : c'est ce qui permet de calculer sa taille avec un simple maximum
-// les cases n'ont pas besoin d'être collées, ce qui donne les diagonales sans code particulier
-// les tailles sont notées lignes x colonnes, comme les coordonnées
-//
-// les pièces et l'état du jeu ne retiennent que le nom de la forme (une simple chaîne) : on retrouve l'objet Forme
-// correspondant avec Forme.parNom()
 class Forme {
     /**
      * :param cases: liste de couples [ligne, colonne] relatifs au coin haut-gauche de la forme
@@ -38,7 +31,7 @@ class Forme {
      * comme toute forme touche la ligne 0 et la colonne 0, le plus grand indice suffit
      * :return: un objet {lignes, colonnes}
      */
-    taille() {
+    calculerTaille() {
         let maxLigne = 0;
         let maxColonne = 0;
 
@@ -56,7 +49,7 @@ class Forme {
      * :param colonne: colonne du coin haut-gauche de la forme
      * :return: liste de couples [ligne, colonne] en coordonnées de la grille
      */
-    casesPosees(ligne, colonne) {
+    calculerCasesPosees(ligne, colonne) {
         const cases = [];
 
         // chaque case de la forme est décalée du coin haut-gauche où on la pose
@@ -71,14 +64,14 @@ class Forme {
      * :param nom: nom de la forme, tel qu'il apparaît dans Forme.TOUTES
      * :return: l'objet Forme correspondant
      */
-    static parNom(nom) {
+    static trouverParNom(nom) {
         return Forme.TOUTES[nom];
     }
 
     /**
      * :return: la liste des noms de toutes les formes
      */
-    static noms() {
+    static listerNoms() {
         return Object.keys(Forme.TOUTES);
     }
 }
@@ -152,7 +145,7 @@ const PIECES_PAR_LOT = 3;
  * :param changements: objet contenant uniquement les champs à remplacer
  * :return: un nouvel état, copie du premier avec les changements appliqués
  */
-function etatAvec(etat, changements) {
+function creerEtatAvec(etat, changements) {
     return { ...etat, ...changements };
 }
 
@@ -216,10 +209,10 @@ function grilleEstVide(grille) {
  * :param valeur: valeur à écrire dans les cases de la forme (0 = vide, 1 à 4 = couleur)
  * :return: une nouvelle grille
  */
-function grilleAvecForme(grille, forme, ligne, colonne, valeur) {
+function creerGrilleAvecForme(grille, forme, ligne, colonne, valeur) {
     const nouvelle = copierGrille(grille);
 
-    for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
+    for (const [l, c] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
         nouvelle[l][c] = valeur;
     }
     return nouvelle;
@@ -231,7 +224,7 @@ function grilleAvecForme(grille, forme, ligne, colonne, valeur) {
  * :param pleines: objet {lignes, colonnes} contenant les index à vider
  * :return: une nouvelle grille
  */
-function grilleSansLignes(grille, pleines) {
+function creerGrilleSansLignes(grille, pleines) {
     const taille = grille.length;
     const nouvelle = copierGrille(grille);
 
@@ -256,7 +249,7 @@ function grilleSansLignes(grille, pleines) {
  * :param ligne: index de la ligne
  * :return: true si aucune case de la ligne ne vaut 0, sinon false
  */
-function lignePleine(grille, ligne) {
+function estLignePleine(grille, ligne) {
     for (let colonne = 0; colonne < grille.length; colonne++) {
         if (grille[ligne][colonne] === 0) return false;
     }
@@ -269,7 +262,7 @@ function lignePleine(grille, ligne) {
  * :param colonne: index de la colonne
  * :return: true si aucune case de la colonne ne vaut 0, sinon false
  */
-function colonnePleine(grille, colonne) {
+function estColonnePleine(grille, colonne) {
     for (let ligne = 0; ligne < grille.length; ligne++) {
         if (grille[ligne][colonne] === 0) return false;
     }
@@ -286,10 +279,10 @@ function chercherLignesPleines(grille) {
     const colonnes = [];
 
     for (let ligne = 0; ligne < grille.length; ligne++) {
-        if (lignePleine(grille, ligne)) lignes.push(ligne);
+        if (estLignePleine(grille, ligne)) lignes.push(ligne);
     }
     for (let colonne = 0; colonne < grille.length; colonne++) {
-        if (colonnePleine(grille, colonne)) colonnes.push(colonne);
+        if (estColonnePleine(grille, colonne)) colonnes.push(colonne);
     }
     return { lignes, colonnes };
 }
@@ -305,7 +298,7 @@ function chercherLignesPleines(grille) {
 function peutPoser(grille, forme, ligne, colonne) {
     const taille = grille.length;
 
-    for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
+    for (const [l, c] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
         // la case sort de la grille
         if (l < 0 || l >= taille || c < 0 || c >= taille) return false;
         // la case est déjà occupée
@@ -338,12 +331,12 @@ function peutPoserQuelquePart(grille, forme) {
  * :param colonne: colonne du coin haut-gauche
  * :return: un objet {lignes, colonnes}, vide si la pose est impossible
  */
-function lignesCasseesPar(grille, forme, ligne, colonne) {
+function chercherLignesCasseesPar(grille, forme, ligne, colonne) {
     if (!peutPoser(grille, forme, ligne, colonne)) {
         return { lignes: [], colonnes: [] };
     }
     // la couleur n'a aucune importance ici, on écrit 1 pour marquer les cases occupées
-    return chercherLignesPleines(grilleAvecForme(grille, forme, ligne, colonne, 1));
+    return chercherLignesPleines(creerGrilleAvecForme(grille, forme, ligne, colonne, 1));
 }
 
 /**
@@ -355,9 +348,9 @@ function lignesCasseesPar(grille, forme, ligne, colonne) {
  * :param colonne: colonne du coin haut-gauche
  * :return: une nouvelle grille
  */
-function grilleApresPose(grille, forme, ligne, colonne) {
-    const remplie = grilleAvecForme(grille, forme, ligne, colonne, 1);
-    return grilleSansLignes(remplie, chercherLignesPleines(remplie));
+function calculerGrilleApresPose(grille, forme, ligne, colonne) {
+    const remplie = creerGrilleAvecForme(grille, forme, ligne, colonne, 1);
+    return creerGrilleSansLignes(remplie, chercherLignesPleines(remplie));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -380,7 +373,7 @@ const MAX_LIGNES_COMPTEES = 6;
  * :param n: le nombre de départ
  * :return: le produit de tous les entiers de 1 à n
  */
-function factorielle(n) {
+function calculerFactorielle(n) {
     let resultat = 1;
 
     for (let i = 2; i <= n; i++) {
@@ -395,11 +388,11 @@ function factorielle(n) {
  * :param combo: nombre de lots d'affilée ayant déjà cassé une ligne
  * :return: le nombre de points à ajouter au score
  */
-function pointsDeSuppression(nbLignes, combo) {
+function calculerPointsDeSuppression(nbLignes, combo) {
     const lignes = Math.min(nbLignes, MAX_LIGNES_COMPTEES);
     const multiplicateur = Math.min(combo + 1, PLAFOND_COMBO_PAR_LIGNE * lignes);
 
-    return POINTS_PAR_LIGNE * factorielle(lignes) * multiplicateur;
+    return POINTS_PAR_LIGNE * calculerFactorielle(lignes) * multiplicateur;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -514,7 +507,7 @@ function peutToutPoserDansUnOrdre(grille, formes) {
             for (let colonne = 0; colonne < grille.length; colonne++) {
                 if (!peutPoser(grille, forme, ligne, colonne)) continue;
 
-                const grilleSuivante = grilleApresPose(grille, forme, ligne, colonne);
+                const grilleSuivante = calculerGrilleApresPose(grille, forme, ligne, colonne);
                 if (peutToutPoserDansUnOrdre(grilleSuivante, restantes)) return true;
             }
         }
@@ -538,11 +531,11 @@ function tirerLotPosable(etat, nombre) {
     // formes qui rentrent encore quelque part, calculées une seule fois puisque la grille ne change pas entre
     // deux essais
     const posables = [];
-    for (const forme of Forme.noms()) {
+    for (const forme of Forme.listerNoms()) {
         if (peutPoserQuelquePart(grille, forme)) posables.push(forme);
     }
 
-    const sac = construireSacDeFormes(posables.length > 0 ? posables : Forme.noms());
+    const sac = construireSacDeFormes(posables.length > 0 ? posables : Forme.listerNoms());
     const chanceTriple = grilleEstVide(grille) ? CHANCE_TRIPLE_GRILLE_VIDE : CHANCE_TRIPLE_EN_JEU;
 
     let pieces;
@@ -579,7 +572,7 @@ function creerEtatInitial(taille = 8, nbCouleurs = 4) {
         ligneCasseeDansLeLot: false,
         pieces: [],
     };
-    return etatAvec(etatVide, { pieces: tirerLotPosable(etatVide, PIECES_PAR_LOT) });
+    return creerEtatAvec(etatVide, { pieces: tirerLotPosable(etatVide, PIECES_PAR_LOT) });
 }
 
 /**
@@ -608,9 +601,9 @@ function supprimerLignesPleines(etat) {
     // rien de plein : l'état ne change pas
     if (nbLignes === 0) return etat;
 
-    return etatAvec(etat, {
-        grille: grilleSansLignes(etat.grille, pleines),
-        score: etat.score + pointsDeSuppression(nbLignes, etat.combo),
+    return creerEtatAvec(etat, {
+        grille: creerGrilleSansLignes(etat.grille, pleines),
+        score: etat.score + calculerPointsDeSuppression(nbLignes, etat.combo),
         combo: etat.combo + 1,
         ligneCasseeDansLeLot: true,
     });
@@ -639,10 +632,10 @@ function poserPiece(etat, idPiece, ligne, colonne) {
 
     // 1. la pièce est dessinée sur la grille et rapporte un point par case occupée
     //    on écrit couleur + 1 parce que 0 est réservé aux cases vides
-    const posee = etatAvec(etat, {
-        grille: grilleAvecForme(etat.grille, piece.forme, ligne, colonne, piece.couleur + 1),
+    const posee = creerEtatAvec(etat, {
+        grille: creerGrilleAvecForme(etat.grille, piece.forme, ligne, colonne, piece.couleur + 1),
         pieces: reserve,
-        score: etat.score + Forme.parNom(piece.forme).nbCases,
+        score: etat.score + Forme.trouverParNom(piece.forme).nbCases,
     });
 
     // 2. les lignes et colonnes devenues pleines sautent et rapportent leurs points
@@ -653,7 +646,7 @@ function poserPiece(etat, idPiece, ligne, colonne) {
 
     // 4. fin de lot : le combo ne retombe à 0 que si aucune des 3 pièces n'a cassé de ligne
     //    le lot suivant est tiré sur la grille telle qu'elle sera affichée au joueur
-    return etatAvec(nettoye, {
+    return creerEtatAvec(nettoye, {
         combo: nettoye.ligneCasseeDansLeLot ? nettoye.combo : 0,
         ligneCasseeDansLeLot: false,
         pieces: tirerLotPosable(nettoye, PIECES_PAR_LOT),
@@ -665,7 +658,7 @@ function poserPiece(etat, idPiece, ligne, colonne) {
  * :param etat: l'état du jeu
  * :return: true si le joueur est bloqué, sinon false
  */
-function partieTerminee(etat) {
+function estPartieTerminee(etat) {
     for (const piece of etat.pieces) {
         if (peutPoserQuelquePart(etat.grille, piece.forme)) return false;
     }
@@ -684,7 +677,7 @@ function basculerCase(etat, ligne, colonne) {
     const grille = copierGrille(etat.grille);
     grille[ligne][colonne] = grille[ligne][colonne] === 0 ? 1 : 0;
 
-    return etatAvec(etat, { grille: grille });
+    return creerEtatAvec(etat, { grille: grille });
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -695,7 +688,7 @@ if (typeof module !== "undefined") {
     module.exports = {
         Forme, GROSSES_FORMES, PIECES_PAR_LOT,
         creerGrilleVide, copierGrille, chercherLignesPleines, peutPoser, peutPoserQuelquePart,
-        lignesCasseesPar, peutToutPoserDansUnOrdre, construireSacDeFormes,
-        pointsDeSuppression, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
+        chercherLignesCasseesPar, peutToutPoserDansUnOrdre, construireSacDeFormes,
+        calculerPointsDeSuppression, creerEtatInitial, poserPiece, estPartieTerminee, basculerCase,
     };
 }

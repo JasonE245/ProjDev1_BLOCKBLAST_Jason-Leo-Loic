@@ -21,7 +21,7 @@ Tout le jeu tient dans une seule variable, `etat`, déclarée dans `main.js` :
 ```
 
 Il n'y a jamais de modification directe de l'affichage. Le seul enchaînement possible est
-celui-ci, écrit en entier dans `surPosePiece` (`main.js`) :
+celui-ci, écrit en entier dans `gererPosePiece` (`main.js`) :
 
 ```
 le joueur lâche une pièce
@@ -44,21 +44,21 @@ cette taille de grille c'est instantané.
 ## 2. Pourquoi on ne modifie jamais l'état
 
 Dans `game_logic.js`, aucune fonction n'écrit dans l'objet qu'elle reçoit. Elle en renvoie
-une copie modifiée, fabriquée par `etatAvec` :
+une copie modifiée, fabriquée par `creerEtatAvec` :
 
 ```js
-return etatAvec(etat, { score: etat.score + points });
+return creerEtatAvec(etat, { score: etat.score + points });
 ```
 
 Cette ligne veut dire : « recopie tous les champs de `etat`, puis remplace `score` par
 cette nouvelle valeur ». L'ancien état n'a pas bougé. C'est le seul endroit du programme
 qui utilise `...`, justement pour n'avoir à l'expliquer qu'une fois.
 
-L'intérêt est concret. Dans `surPosePiece`, on a besoin de savoir quelles lignes vont
+L'intérêt est concret. Dans `gererPosePiece`, on a besoin de savoir quelles lignes vont
 sauter **avant** de poser la pièce, pour pouvoir les faire clignoter ensuite :
 
 ```js
-const cassees = lignesCasseesPar(etat.grille, piece.forme, ligne, colonne);
+const cassees = chercherLignesCasseesPar(etat.grille, piece.forme, ligne, colonne);
 etat = poserPiece(etat, idPiece, ligne, colonne);
 afficherTout();
 animerLignesCassees(etat, cassees);
@@ -129,7 +129,7 @@ non les pièces. D'où le champ `ligneCasseeDansLeLot` :
 Autrement dit, casser une ligne avec la première pièce d'un lot protège le combo même si
 les deux suivantes ne cassent rien.
 
-Le barème est dans `pointsDeSuppression` :
+Le barème est dans `calculerPointsDeSuppression` :
 
 ```
 score = 30 x L! x min(combo + 1, 6 x L)
@@ -149,7 +149,7 @@ grille, et `evenement.target.closest(".case")` retrouve la case concernée.
 Deux détails qui ne se devinent pas :
 
 - Sans `evenement.preventDefault()` dans `dragover`, le navigateur refuse le lâcher.
-- `origineDeLaPose` traduit la position du curseur en coin haut-gauche de la forme, pour
+- `calculerOrigineDePose` traduit la position du curseur en coin haut-gauche de la forme, pour
   que la pièce paraisse centrée sous le curseur plutôt qu'accrochée par son coin.
 
 Comme les écouteurs sont posés une fois pour toutes mais que l'état change à chaque coup,

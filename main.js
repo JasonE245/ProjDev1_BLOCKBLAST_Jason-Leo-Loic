@@ -35,10 +35,10 @@ poserPiece(etat, idPiece, ligne, colonne):
     - tire un nouveau lot quand les trois pièces ont été posées
     - renvoie l'état inchangé si la pose est impossible
 
-lignesCasseesPar(grille, forme, ligne, colonne):
+chercherLignesCasseesPar(grille, forme, ligne, colonne):
     - dit quelles lignes et colonnes sauteraient si on posait la forme ici, sans rien poser
 
-partieTerminee(etat):
+estPartieTerminee(etat):
     - dit si aucune des pièces proposées ne rentre nulle part
 
 basculerCase(etat, ligne, colonne):
@@ -53,13 +53,13 @@ fonctions principales:
 afficherGrille(etat) / afficherReserve(etat) / afficherScore(etat, record) / afficherFinDePartie(etat):
     - redessinent chacun un morceau de la page à partir de l'état
 
-initInteractionsGrille(surPose, surBascule):
+initialiserInteractionsGrille(gererPose, gererBascule):
     - branche le glisser-déposer et le clic du mode debug, une seule fois au démarrage
 
 animerLignesCassees(etat, cassees):
     - fait clignoter les lignes qui viennent de sauter
 
-appliquerTheme(theme) / afficherChoixTheme(surChoix):
+appliquerTheme(theme) / afficherChoixTheme(gererChoix):
     - gèrent les quatre thèmes de couleurs
 
 -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
@@ -108,12 +108,12 @@ function afficherTout() {
  * :param colonne: colonne du coin haut-gauche
  * :return: rien
  */
-function surPosePiece(idPiece, ligne, colonne) {
+function gererPosePiece(idPiece, ligne, colonne) {
     const piece = trouverPiece(etat.pieces, idPiece);
     if (piece === null) return;
 
     // calculé AVANT la pose : après, les lignes ont déjà sauté et il n'y aurait plus rien à faire clignoter
-    const cassees = lignesCasseesPar(etat.grille, piece.forme, ligne, colonne);
+    const cassees = chercherLignesCasseesPar(etat.grille, piece.forme, ligne, colonne);
 
     etat = poserPiece(etat, idPiece, ligne, colonne);
 
@@ -133,7 +133,7 @@ function surPosePiece(idPiece, ligne, colonne) {
  * :param colonne: colonne de la case
  * :return: rien
  */
-function surBasculeCase(ligne, colonne) {
+function gererBasculeCase(ligne, colonne) {
     etat = basculerCase(etat, ligne, colonne);
     afficherTout();
 }
@@ -142,7 +142,7 @@ function surBasculeCase(ligne, colonne) {
  * appelée quand le joueur clique sur "Rejouer"
  * :return: rien
  */
-function surRejouer() {
+function gererRejouer() {
     etat = creerEtatInitial(TAILLE_GRILLE, NB_COULEURS_PIECES);
     afficherTout();
 }
@@ -152,7 +152,7 @@ function surRejouer() {
  * :param theme: le thème choisi
  * :return: rien
  */
-function surChoixTheme(theme) {
+function gererChoixTheme(theme) {
     appliquerTheme(theme);
     localStorage.setItem(CLE_THEME, theme.nom);
 }
@@ -168,9 +168,9 @@ for (const theme of themes) {
 }
 appliquerTheme(themeEnregistre !== null ? themeEnregistre : themes[0]);
 
-afficherChoixTheme(surChoixTheme);
-initInteractionsGrille(surPosePiece, surBasculeCase);
-initRaccourciDebug();
-document.getElementById("bouton-rejouer").addEventListener("click", surRejouer);
+afficherChoixTheme(gererChoixTheme);
+initialiserInteractionsGrille(gererPosePiece, gererBasculeCase);
+initialiserRaccourciDebug();
+document.getElementById("bouton-rejouer").addEventListener("click", gererRejouer);
 
 afficherTout();

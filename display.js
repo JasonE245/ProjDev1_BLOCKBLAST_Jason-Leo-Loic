@@ -59,10 +59,10 @@ function appliquerTheme(theme) {
 
 /**
  * remplit le panneau de choix de thème et branche le bouton qui l'ouvre
- * :param surChoix: fonction appelée avec le thème choisi quand le joueur clique une pastille
+ * :param gererChoix: fonction appelée avec le thème choisi quand le joueur clique une pastille
  * :return: rien, le panneau est rempli
  */
-function afficherChoixTheme(surChoix) {
+function afficherChoixTheme(gererChoix) {
     const panneau = document.getElementById("panneau-themes");
 
     for (const theme of themes) {
@@ -70,7 +70,7 @@ function afficherChoixTheme(surChoix) {
         pastille.className = "pastille-theme";
         pastille.style.background = theme.pleine;
         pastille.title = theme.nom;
-        pastille.addEventListener("click", () => surChoix(theme));
+        pastille.addEventListener("click", () => gererChoix(theme));
         panneau.appendChild(pastille);
     }
 
@@ -99,7 +99,7 @@ let idPieceGlissee = null;
  * :param colonne: colonne cherchée
  * :return: l'élément de la page, ou null si ces coordonnées sortent de la grille
  */
-function caseGrille(ligne, colonne) {
+function trouverCaseGrille(ligne, colonne) {
     return document.querySelector(`#grille .case[data-ligne="${ligne}"][data-colonne="${colonne}"]`);
 }
 
@@ -111,20 +111,20 @@ function caseGrille(ligne, colonne) {
  * :param pleines: objet {lignes, colonnes} contenant les index concernés
  * :return: un Set d'éléments de la page
  */
-function casesDesLignes(taille, pleines) {
+function listerCasesDesLignes(taille, pleines) {
     const cases = new Set();
 
     for (const ligne of pleines.lignes) {
         for (let colonne = 0; colonne < taille; colonne++) {
-            cases.add(caseGrille(ligne, colonne));
+            cases.add(trouverCaseGrille(ligne, colonne));
         }
     }
     for (const colonne of pleines.colonnes) {
         for (let ligne = 0; ligne < taille; ligne++) {
-            cases.add(caseGrille(ligne, colonne));
+            cases.add(trouverCaseGrille(ligne, colonne));
         }
     }
-    // caseGrille renvoie null pour des coordonnées hors grille, on retire cette valeur
+    // trouverCaseGrille renvoie null pour des coordonnées hors grille, on retire cette valeur
     cases.delete(null);
     return cases;
 }
@@ -202,10 +202,10 @@ function afficherApercu(etat, forme, ligne, colonne) {
 
     const valide = peutPoser(etat.grille, forme, ligne, colonne);
 
-    for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
-        // une forme survolée près d'un bord déborde de la grille : caseGrille ne trouve alors aucune case, et il n'y
+    for (const [l, c] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
+        // une forme survolée près d'un bord déborde : trouverCaseGrille ne trouve alors aucune case, et il n'y
         // a rien à marquer pour cette partie de la forme
-        const element = caseGrille(l, c);
+        const element = trouverCaseGrille(l, c);
         if (element !== null) {
             element.classList.add(valide ? "apercu-valide" : "apercu-invalide");
         }
@@ -215,8 +215,8 @@ function afficherApercu(etat, forme, ligne, colonne) {
     if (!valide) return;
 
     // met en évidence les lignes et colonnes que cette pose ferait sauter
-    const cassees = lignesCasseesPar(etat.grille, forme, ligne, colonne);
-    for (const element of casesDesLignes(etat.taille, cassees)) {
+    const cassees = chercherLignesCasseesPar(etat.grille, forme, ligne, colonne);
+    for (const element of listerCasesDesLignes(etat.taille, cassees)) {
         element.classList.add("apercu-suppression");
     }
 }
@@ -229,7 +229,7 @@ function afficherApercu(etat, forme, ligne, colonne) {
  * :return: rien, l'animation se lance
  */
 function animerLignesCassees(etat, cassees) {
-    for (const element of casesDesLignes(etat.taille, cassees)) {
+    for (const element of listerCasesDesLignes(etat.taille, cassees)) {
         element.classList.add("vient-de-sauter");
 
         // la durée est celle définie dans le CSS : il n'y a donc pas de valeur à garder synchronisée des deux côtés
@@ -251,8 +251,8 @@ function animerLignesCassees(etat, cassees) {
  * :param evenement: l'événement de souris, pour la position exacte dans la case
  * :return: un objet {ligne, colonne}, éventuellement hors de la grille
  */
-function origineDeLaPose(forme, element, evenement) {
-    const taille = Forme.parNom(forme).taille();
+function calculerOrigineDePose(forme, element, evenement) {
+    const taille = Forme.trouverParNom(forme).calculerTaille();
 
     // position du curseur en nombre de cases, virgule comprise
     const ligneCurseur = Number(element.dataset.ligne) + evenement.offsetY / TAILLE_CASE;
@@ -270,16 +270,16 @@ function origineDeLaPose(forme, element, evenement) {
  * ils sont posés sur la grille elle-même et non sur chacune des 64 cases : deux écouteurs au lieu de cent
  * vingt-huit, et surtout rien à rebrancher après un affichage, puisque la grille survit alors que les cases sont
  * recréées à chaque tour
- * :param surPose: fonction appelée avec (idPiece, ligne, colonne) quand le joueur lâche une pièce
- * :param surBascule: fonction appelée avec (ligne, colonne) quand le joueur clique une case en mode debug
+ * :param gererPose: fonction appelée avec (idPiece, ligne, colonne) quand le joueur lâche une pièce
+ * :param gererBascule: fonction appelée avec (ligne, colonne) quand le joueur clique une case en mode debug
  * :return: rien, les écouteurs sont en place
  */
-function initInteractionsGrille(surPose, surBascule) {
+function initialiserInteractionsGrille(gererPose, gererBascule) {
     const conteneur = document.getElementById("grille");
 
-    conteneur.addEventListener("dragover", surSurvolGlisser);
-    conteneur.addEventListener("drop", (evenement) => surLacher(evenement, surPose));
-    conteneur.addEventListener("click", (evenement) => surClicDebug(evenement, surBascule));
+    conteneur.addEventListener("dragover", gererSurvolGlisser);
+    conteneur.addEventListener("drop", (evenement) => gererLacher(evenement, gererPose));
+    conteneur.addEventListener("click", (evenement) => gererClicDebug(evenement, gererBascule));
 }
 
 /**
@@ -287,7 +287,7 @@ function initInteractionsGrille(surPose, surBascule) {
  * :param evenement: l'événement de souris
  * :return: un objet {element, piece}, ou null si l'événement ne concerne pas une case ou si rien n'est glissé
  */
-function pieceGlisseeSur(evenement) {
+function trouverPieceGlisseeSur(evenement) {
     // closest remonte de l'élément touché jusqu'à la case qui le contient ; renvoie null pour la marge de la grille
     const element = evenement.target.closest(".case");
     if (element === null || etatAffiche === null) return null;
@@ -303,48 +303,48 @@ function pieceGlisseeSur(evenement) {
  * :param evenement: l'événement dragover
  * :return: rien
  */
-function surSurvolGlisser(evenement) {
-    const cible = pieceGlisseeSur(evenement);
+function gererSurvolGlisser(evenement) {
+    const cible = trouverPieceGlisseeSur(evenement);
     if (cible === null) return;
 
     // sans preventDefault, le navigateur refuse le lâcher sur cette case
     evenement.preventDefault();
     evenement.dataTransfer.dropEffect = "move";
 
-    const origine = origineDeLaPose(cible.piece.forme, cible.element, evenement);
+    const origine = calculerOrigineDePose(cible.piece.forme, cible.element, evenement);
     afficherApercu(etatAffiche, cible.piece.forme, origine.ligne, origine.colonne);
 }
 
 /**
  * prévient la couche de contrôle quand le joueur lâche une pièce sur la grille
  * :param evenement: l'événement drop
- * :param surPose: fonction à appeler avec (idPiece, ligne, colonne)
+ * :param gererPose: fonction à appeler avec (idPiece, ligne, colonne)
  * :return: rien
  */
-function surLacher(evenement, surPose) {
-    const cible = pieceGlisseeSur(evenement);
+function gererLacher(evenement, gererPose) {
+    const cible = trouverPieceGlisseeSur(evenement);
     if (cible === null) return;
 
     evenement.preventDefault();
     effacerApercu();
 
-    const origine = origineDeLaPose(cible.piece.forme, cible.element, evenement);
-    surPose(cible.piece.id, origine.ligne, origine.colonne);
+    const origine = calculerOrigineDePose(cible.piece.forme, cible.element, evenement);
+    gererPose(cible.piece.id, origine.ligne, origine.colonne);
 }
 
 /**
  * prévient la couche de contrôle quand le joueur clique une case, en mode debug uniquement
  * :param evenement: l'événement click
- * :param surBascule: fonction à appeler avec (ligne, colonne)
+ * :param gererBascule: fonction à appeler avec (ligne, colonne)
  * :return: rien
  */
-function surClicDebug(evenement, surBascule) {
+function gererClicDebug(evenement, gererBascule) {
     if (!document.body.classList.contains("mode-debug")) return;
 
     const element = evenement.target.closest(".case");
     if (element === null) return;
 
-    surBascule(Number(element.dataset.ligne), Number(element.dataset.colonne));
+    gererBascule(Number(element.dataset.ligne), Number(element.dataset.colonne));
 }
 
 // mot à taper n'importe où sur la page pour activer ou désactiver le mode debug
@@ -354,7 +354,7 @@ const CODE_DEBUG = "debug";
  * surveille le clavier pour activer le mode debug
  * :return: rien, l'écouteur est en place
  */
-function initRaccourciDebug() {
+function initialiserRaccourciDebug() {
     let touchesTapees = "";
 
     document.addEventListener("keydown", (evenement) => {
@@ -381,8 +381,8 @@ function initRaccourciDebug() {
  * :return: l'élément de la page
  */
 function creerElementPiece(piece) {
-    const forme = Forme.parNom(piece.forme);
-    const taille = forme.taille();
+    const forme = Forme.trouverParNom(piece.forme);
+    const taille = forme.calculerTaille();
     const cases = forme.cases;
 
     const element = document.createElement("div");
@@ -474,7 +474,7 @@ function afficherScore(etat, record) {
  * :return: rien
  */
 function afficherFinDePartie(etat) {
-    const perdu = partieTerminee(etat);
+    const perdu = estPartieTerminee(etat);
     document.getElementById("fin-de-partie").classList.toggle("ouvert", perdu);
 
     if (perdu) {

@@ -14,8 +14,8 @@ const assert = require("node:assert/strict");
 const {
     Forme, GROSSES_FORMES, PIECES_PAR_LOT,
     creerGrilleVide, chercherLignesPleines, peutPoser,
-    lignesCasseesPar, peutToutPoserDansUnOrdre, construireSacDeFormes,
-    pointsDeSuppression, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
+    chercherLignesCasseesPar, peutToutPoserDansUnOrdre, construireSacDeFormes,
+    calculerPointsDeSuppression, creerEtatInitial, poserPiece, estPartieTerminee, basculerCase,
 } = require("../game_logic.js");
 
 /**
@@ -47,8 +47,8 @@ function grilleLignePresquePleine() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 test("toute forme touche la ligne 0 et la colonne 0", () => {
-    for (const nom of Forme.noms()) {
-        const cases = Forme.parNom(nom).cases;
+    for (const nom of Forme.listerNoms()) {
+        const cases = Forme.trouverParNom(nom).cases;
         let minLigne = 99;
         let minColonne = 99;
 
@@ -64,8 +64,8 @@ test("toute forme touche la ligne 0 et la colonne 0", () => {
 test("aucune forme n'est définie deux fois", () => {
     const vues = new Map();
 
-    for (const nom of Forme.noms()) {
-        const cases = Forme.parNom(nom).cases;
+    for (const nom of Forme.listerNoms()) {
+        const cases = Forme.trouverParNom(nom).cases;
         // on trie pour que deux définitions identiques écrites dans un ordre différent se ressemblent
         const cle = cases.map((c) => c.join(",")).sort().join(" ");
         assert.equal(vues.get(cle), undefined, `${nom} est identique à ${vues.get(cle)}`);
@@ -75,15 +75,15 @@ test("aucune forme n'est définie deux fois", () => {
 
 test("les grosses formes existent bien", () => {
     for (const nom of GROSSES_FORMES) {
-        assert.ok(Forme.parNom(nom), `forme inconnue : ${nom}`);
+        assert.ok(Forme.trouverParNom(nom), `forme inconnue : ${nom}`);
     }
 });
 
-test("taille() donne les dimensions en lignes et colonnes", () => {
-    assert.deepEqual(Forme.parNom("bloc").taille(), { lignes: 1, colonnes: 1 });
-    assert.deepEqual(Forme.parNom("ligne5_h").taille(), { lignes: 1, colonnes: 5 });
-    assert.deepEqual(Forme.parNom("rect_2x3").taille(), { lignes: 2, colonnes: 3 });
-    assert.deepEqual(Forme.parNom("rect_3x2").taille(), { lignes: 3, colonnes: 2 });
+test("calculerTaille() donne les dimensions en lignes et colonnes", () => {
+    assert.deepEqual(Forme.trouverParNom("bloc").calculerTaille(), { lignes: 1, colonnes: 1 });
+    assert.deepEqual(Forme.trouverParNom("ligne5_h").calculerTaille(), { lignes: 1, colonnes: 5 });
+    assert.deepEqual(Forme.trouverParNom("rect_2x3").calculerTaille(), { lignes: 2, colonnes: 3 });
+    assert.deepEqual(Forme.trouverParNom("rect_3x2").calculerTaille(), { lignes: 3, colonnes: 2 });
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -115,11 +115,11 @@ test("chercherLignesPleines trouve les lignes et les colonnes pleines", () => {
     assert.deepEqual(chercherLignesPleines(grille), { lignes: [3], colonnes: [5] });
 });
 
-test("lignesCasseesPar ne renvoie rien si la pose est impossible", () => {
+test("chercherLignesCasseesPar ne renvoie rien si la pose est impossible", () => {
     const grille = creerGrilleVide(8);
     grille[0][0] = 1;
 
-    assert.deepEqual(lignesCasseesPar(grille, "bloc", 0, 0), { lignes: [], colonnes: [] });
+    assert.deepEqual(chercherLignesCasseesPar(grille, "bloc", 0, 0), { lignes: [], colonnes: [] });
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -139,7 +139,7 @@ test("compléter une ligne la vide et rapporte les points de suppression", () =>
     for (let colonne = 0; colonne < 8; colonne++) {
         assert.equal(suivant.grille[0][colonne], 0, "la ligne aurait dû être vidée");
     }
-    assert.equal(suivant.score, 1 + pointsDeSuppression(1, 0));
+    assert.equal(suivant.score, 1 + calculerPointsDeSuppression(1, 0));
     assert.equal(suivant.combo, 1);
 });
 
@@ -186,10 +186,10 @@ test("le combo tient si une pièce du lot a cassé une ligne", () => {
 });
 
 test("le barème suit la formule annoncée et reste borné", () => {
-    assert.equal(pointsDeSuppression(1, 0), 30);
-    assert.equal(pointsDeSuppression(2, 0), 60);
-    assert.equal(pointsDeSuppression(2, 5), 360);
-    assert.equal(pointsDeSuppression(20, 0), pointsDeSuppression(6, 0));
+    assert.equal(calculerPointsDeSuppression(1, 0), 30);
+    assert.equal(calculerPointsDeSuppression(2, 0), 60);
+    assert.equal(calculerPointsDeSuppression(2, 5), 360);
+    assert.equal(calculerPointsDeSuppression(20, 0), calculerPointsDeSuppression(6, 0));
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -229,8 +229,8 @@ test("la partie est finie quand plus aucune pièce ne rentre", () => {
     }
     pleine[0][0] = 0;
 
-    assert.equal(partieTerminee(etatDeTest(pleine, [{ id: "p1", forme: "carre_2x2", couleur: 0 }])), true);
-    assert.equal(partieTerminee(etatDeTest(pleine, [{ id: "p1", forme: "bloc", couleur: 0 }])), false);
+    assert.equal(estPartieTerminee(etatDeTest(pleine, [{ id: "p1", forme: "carre_2x2", couleur: 0 }])), true);
+    assert.equal(estPartieTerminee(etatDeTest(pleine, [{ id: "p1", forme: "bloc", couleur: 0 }])), false);
 });
 
 test("basculerCase remplit puis vide une case", () => {
