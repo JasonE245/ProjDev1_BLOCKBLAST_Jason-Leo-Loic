@@ -92,7 +92,7 @@ Un seul objet, `jeu.partie`, créé dans le constructeur de `Jeu` (`main.js` lig
 | 271 | `VueGrille.TAILLE_CASE` | 40 pixels, transmis au CSS par `--taille-case` |
 | 281 | **`class GlisserDeposer`** | Le glisser-déposer. Écouteurs posés **une seule fois** sur la grille |
 | 303 | `commencerGlisser()` | Appelée par la réserve quand le joueur attrape une pièce |
-| 324 | `calculerOrigine()` | Traduit la position du curseur en coin haut-gauche de la forme |
+| 324 | `calculerOrigineDePose()` | Traduit la position du curseur en coin haut-gauche de la forme |
 | 360 | `gererSurvol()` | Montre l'aperçu pendant que la pièce survole la grille |
 | 377 | `gererLacher()` | Prévient le jeu quand la pièce est lâchée |
 | 395 | **`class ModeDebug`** | Taper « debug », puis cliquer les cases pour les remplir ou les vider |
@@ -128,7 +128,7 @@ le joueur lâche une pièce sur la grille
 GlisserDeposer.gererLacher()            l'écouteur posé sur #grille retrouve la case et la pièce
         |
         v
-GlisserDeposer.calculerOrigine()        position du curseur -> coin de la forme
+GlisserDeposer.calculerOrigineDePose()  position du curseur -> coin de la forme
         |
         v
 Jeu.gererPosePiece(id, ligne, colonne)    la fonction que le jeu a donnée au glisser-déposer

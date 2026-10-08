@@ -178,7 +178,7 @@ jusqu'à la grille, et `evenement.target.closest(".case")` retrouve la case conc
 Trois détails qui ne se devinent pas :
 
 - Sans `evenement.preventDefault()` pendant le survol, le navigateur refuse le lâcher.
-- `calculerOrigine` traduit la position du curseur en coin haut-gauche de la forme, pour
+- `calculerOrigineDePose` traduit la position du curseur en coin haut-gauche de la forme, pour
   que la pièce paraisse centrée sous le curseur plutôt qu'accrochée par son coin.
 - `GlisserDeposer` a besoin de savoir quelle pièce est glissée, alors que les écouteurs
   ont été posés une fois pour toutes. C'est `VueReserve` qui le prévient avec

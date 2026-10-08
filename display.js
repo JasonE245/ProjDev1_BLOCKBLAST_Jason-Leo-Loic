@@ -321,7 +321,7 @@ class GlisserDeposer {
      * :param evenement: l'événement de souris, pour la position exacte dans la case
      * :return: un objet {ligne, colonne}, éventuellement hors de la grille
      */
-    calculerOrigine(forme, element, evenement) {
+    calculerOrigineDePose(forme, element, evenement) {
         const taille = Forme.trouverParNom(forme).calculerTaille();
 
         // position du curseur en nombre de cases, virgule comprise
@@ -365,7 +365,7 @@ class GlisserDeposer {
         evenement.preventDefault();
         evenement.dataTransfer.dropEffect = "move";
 
-        const origine = this.calculerOrigine(cible.piece.forme, cible.element, evenement);
+        const origine = this.calculerOrigineDePose(cible.piece.forme, cible.element, evenement);
         this.vueGrille.afficherApercu(cible.piece.forme, origine.ligne, origine.colonne);
     }
 
@@ -381,7 +381,7 @@ class GlisserDeposer {
         evenement.preventDefault();
         this.vueGrille.effacerApercu();
 
-        const origine = this.calculerOrigine(cible.piece.forme, cible.element, evenement);
+        const origine = this.calculerOrigineDePose(cible.piece.forme, cible.element, evenement);
         this.gererPose(cible.piece.id, origine.ligne, origine.colonne);
     }
 }
