@@ -88,10 +88,10 @@ Un seul objet, `jeu.partie`, créé dans le constructeur de `Jeu` (`main.js` lig
 | 103 | **`class VueGrille`** | Le dessin de la grille |
 | 167 | `afficher()` | Reconstruit les 64 cases et retient la partie dessinée |
 | 211 | `afficherApercu()` | Montre où la pièce tomberait et ce que ça casserait |
-| 242 | `animer()` | Fait clignoter les lignes qui viennent de sauter |
+| 242 | `animerLignesCassees()` | Fait clignoter les lignes qui viennent de sauter |
 | 255 | `VueGrille.TAILLE_CASE` | 40 pixels, transmis au CSS par `--taille-case` |
 | 265 | **`class GlisserDeposer`** | Le glisser-déposer. Écouteurs posés **une seule fois** sur la grille |
-| 287 | `commencer()` | Appelée par la réserve quand le joueur attrape une pièce |
+| 287 | `commencerGlisser()` | Appelée par la réserve quand le joueur attrape une pièce |
 | 308 | `calculerOrigine()` | Traduit la position du curseur en coin haut-gauche de la forme |
 | 344 | `gererSurvol()` | Montre l'aperçu pendant que la pièce survole la grille |
 | 361 | `gererLacher()` | Prévient le jeu quand la pièce est lâchée |
@@ -100,7 +100,7 @@ Un seul objet, `jeu.partie`, créé dans le constructeur de `Jeu` (`main.js` lig
 | 443 | **`class VueReserve`** | Le dessin des pièces proposées |
 | 476 | `creerElementPiece()` | Fabrique une pièce glissable |
 | 532 | **`class VueScore`** | Score, record, combo, et écran de fin avec son bouton Rejouer |
-| 568 | `afficherFin()` | Montre ou cache l'écran de fin |
+| 568 | `afficherFinDePartie()` | Montre ou cache l'écran de fin |
 
 ## Où est quoi — `main.js`
 
@@ -144,7 +144,7 @@ Jeu.gererPosePiece(id, ligne, colonne)    la fonction que le jeu a donnée au gl
         |
         +-- jeu.afficherTout()                  VueGrille, VueScore et VueReserve redessinent
         |
-        +-- vueGrille.animer()                  fait clignoter
+        +-- vueGrille.animerLignesCassees()                  fait clignoter
 ```
 
 ## Je veux modifier quelque chose, je vais où

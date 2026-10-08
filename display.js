@@ -239,7 +239,7 @@ class VueGrille {
      * :param cassees: objet {lignes, colonnes} calculé avant la pose
      * :return: rien, l'animation se lance
      */
-    animer(cassees) {
+    animerLignesCassees(cassees) {
         for (const element of this.listerCasesDesLignes(cassees)) {
             element.classList.add("vient-de-sauter");
 
@@ -284,7 +284,7 @@ class GlisserDeposer {
      * :param idPiece: identifiant de la pièce attrapée
      * :return: rien
      */
-    commencer(idPiece) {
+    commencerGlisser(idPiece) {
         this.idPieceGlissee = idPiece;
     }
 
@@ -292,7 +292,7 @@ class GlisserDeposer {
      * appelée par la réserve quand le joueur relâche la pièce, sur la grille ou ailleurs
      * :return: rien
      */
-    terminer() {
+    terminerGlisser() {
         this.idPieceGlissee = null;
         this.vueGrille.effacerApercu();
     }
@@ -502,7 +502,7 @@ class VueReserve {
         }
 
         element.addEventListener("dragstart", (evenement) => {
-            this.glisserDeposer.commencer(piece.id);
+            this.glisserDeposer.commencerGlisser(piece.id);
 
             // Firefox refuse de démarrer un glisser si aucune donnée n'est associée à l'événement
             evenement.dataTransfer.setData("text/plain", piece.id);
@@ -517,7 +517,7 @@ class VueReserve {
 
         element.addEventListener("dragend", () => {
             element.classList.remove("en-glissement");
-            this.glisserDeposer.terminer();
+            this.glisserDeposer.terminerGlisser();
         });
 
         return element;
@@ -565,7 +565,7 @@ class VueScore {
      * :param partie: la partie en cours
      * :return: rien
      */
-    afficherFin(partie) {
+    afficherFinDePartie(partie) {
         const perdu = partie.estTerminee();
         this.ecranFin.classList.toggle("ouvert", perdu);
 

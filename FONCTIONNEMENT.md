@@ -81,7 +81,7 @@ if (!this.partie.poserPiece(idPiece, ligne, colonne)) return;
 // ... mise à jour du record ...
 
 this.afficherTout();
-this.vueGrille.animer(cassees);
+this.vueGrille.animerLignesCassees(cassees);
 ```
 
 Après la pose, les lignes sont déjà vides et il n'y aurait plus rien à faire clignoter.
@@ -182,7 +182,7 @@ Trois détails qui ne se devinent pas :
   que la pièce paraisse centrée sous le curseur plutôt qu'accrochée par son coin.
 - `GlisserDeposer` a besoin de savoir quelle pièce est glissée, alors que les écouteurs
   ont été posés une fois pour toutes. C'est `VueReserve` qui le prévient avec
-  `commencer(idPiece)` quand le joueur attrape une pièce, et il retrouve la pièce dans
+  `commencerGlisser(idPiece)` quand le joueur attrape une pièce, et il retrouve la pièce dans
   `vueGrille.partieAffichee`, la dernière partie dessinée.
 
 ## 6. Classes sans état, et constantes posées après la classe

@@ -120,7 +120,7 @@ class Jeu {
         this.vueGrille.afficher(this.partie);
         this.vueScore.afficher(this.partie, this.record);
         this.vueReserve.afficher(this.partie);
-        this.vueScore.afficherFin(this.partie);
+        this.vueScore.afficherFinDePartie(this.partie);
     }
 
     /**
@@ -147,7 +147,7 @@ class Jeu {
         }
 
         this.afficherTout();
-        this.vueGrille.animer(cassees);
+        this.vueGrille.animerLignesCassees(cassees);
     }
 
     /**
