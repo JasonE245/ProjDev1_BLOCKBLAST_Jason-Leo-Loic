@@ -13,8 +13,7 @@ const assert = require("node:assert/strict");
 
 const {
     Forme, GROSSES_FORMES, PIECES_PAR_LOT,
-    creerGrilleVide, chercherLignesPleines, peutPoser,
-    lignesCasseesPar, peutToutPoserDansUnOrdre, construireSacDeFormes,
+    Grille, peutToutPoserDansUnOrdre, construireSacDeFormes,
     pointsDeSuppression, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
 } = require("../game_logic.js");
 
@@ -26,7 +25,7 @@ const {
  * :return: un état complet, prêt à passer à poserPiece
  */
 function etatDeTest(grille, pieces, extra = {}) {
-    return { ...creerEtatInitial(grille.length), grille, pieces, ...extra };
+    return { ...creerEtatInitial(grille.taille), grille, pieces, ...extra };
 }
 
 /**
@@ -34,10 +33,10 @@ function etatDeTest(grille, pieces, extra = {}) {
  * :return: une grille 8x8
  */
 function grilleLignePresquePleine() {
-    const grille = creerGrilleVide(8);
+    const grille = new Grille(8);
 
     for (let colonne = 0; colonne < 7; colonne++) {
-        grille[0][colonne] = 1;
+        grille.ecrireCase(0, colonne, 1);
     }
     return grille;
 }
@@ -91,35 +90,44 @@ test("taille() donne les dimensions en lignes et colonnes", () => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 test("une pièce ne peut pas dépasser de la grille", () => {
-    const grille = creerGrilleVide(8);
+    const grille = new Grille(8);
 
-    assert.equal(peutPoser(grille, "ligne5_h", 0, 4), false);
-    assert.equal(peutPoser(grille, "ligne5_h", 0, 3), true);
-    assert.equal(peutPoser(grille, "bloc", -1, 0), false);
+    assert.equal(grille.peutPoser("ligne5_h", 0, 4), false);
+    assert.equal(grille.peutPoser("ligne5_h", 0, 3), true);
+    assert.equal(grille.peutPoser("bloc", -1, 0), false);
 });
 
 test("une pièce ne peut pas recouvrir une case occupée", () => {
-    const grille = creerGrilleVide(8);
-    grille[1][1] = 2;
+    const grille = new Grille(8);
+    grille.ecrireCase(1, 1, 2);
 
-    assert.equal(peutPoser(grille, "carre_2x2", 0, 0), false);
-    assert.equal(peutPoser(grille, "carre_2x2", 2, 2), true);
+    assert.equal(grille.peutPoser("carre_2x2", 0, 0), false);
+    assert.equal(grille.peutPoser("carre_2x2", 2, 2), true);
 });
 
 test("chercherLignesPleines trouve les lignes et les colonnes pleines", () => {
-    const grille = creerGrilleVide(8);
+    const grille = new Grille(8);
 
-    for (let colonne = 0; colonne < 8; colonne++) grille[3][colonne] = 1;
-    for (let ligne = 0; ligne < 8; ligne++) grille[ligne][5] = 1;
+    for (let colonne = 0; colonne < 8; colonne++) grille.ecrireCase(3, colonne, 1);
+    for (let ligne = 0; ligne < 8; ligne++) grille.ecrireCase(ligne, 5, 1);
 
-    assert.deepEqual(chercherLignesPleines(grille), { lignes: [3], colonnes: [5] });
+    assert.deepEqual(grille.chercherLignesPleines(), { lignes: [3], colonnes: [5] });
+});
+
+test("une copie de grille est indépendante de l'originale", () => {
+    const grille = new Grille(8);
+    const copie = grille.copier();
+    copie.ecrireCase(2, 3, 1);
+
+    assert.equal(copie.lireCase(2, 3), 1);
+    assert.equal(grille.lireCase(2, 3), 0, "l'originale ne doit pas bouger");
 });
 
 test("lignesCasseesPar ne renvoie rien si la pose est impossible", () => {
-    const grille = creerGrilleVide(8);
-    grille[0][0] = 1;
+    const grille = new Grille(8);
+    grille.ecrireCase(0, 0, 1);
 
-    assert.deepEqual(lignesCasseesPar(grille, "bloc", 0, 0), { lignes: [], colonnes: [] });
+    assert.deepEqual(grille.lignesCasseesPar("bloc", 0, 0), { lignes: [], colonnes: [] });
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,7 +135,7 @@ test("lignesCasseesPar ne renvoie rien si la pose est impossible", () => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 test("poser une pièce rapporte un point par case", () => {
-    const etat = etatDeTest(creerGrilleVide(8), [{ id: "p1", forme: "carre_2x2", couleur: 0 }]);
+    const etat = etatDeTest(new Grille(8), [{ id: "p1", forme: "carre_2x2", couleur: 0 }]);
 
     assert.equal(poserPiece(etat, "p1", 0, 0).score, 4);
 });
@@ -137,14 +145,14 @@ test("compléter une ligne la vide et rapporte les points de suppression", () =>
     const suivant = poserPiece(etat, "p1", 0, 7);
 
     for (let colonne = 0; colonne < 8; colonne++) {
-        assert.equal(suivant.grille[0][colonne], 0, "la ligne aurait dû être vidée");
+        assert.equal(suivant.grille.lireCase(0, colonne), 0, "la ligne aurait dû être vidée");
     }
     assert.equal(suivant.score, 1 + pointsDeSuppression(1, 0));
     assert.equal(suivant.combo, 1);
 });
 
 test("une pose impossible laisse l'état inchangé", () => {
-    const etat = etatDeTest(creerGrilleVide(8), [{ id: "p1", forme: "ligne5_h", couleur: 0 }]);
+    const etat = etatDeTest(new Grille(8), [{ id: "p1", forme: "ligne5_h", couleur: 0 }]);
 
     assert.equal(poserPiece(etat, "p1", 0, 6), etat);
     assert.equal(poserPiece(etat, "inconnue", 0, 0), etat);
@@ -164,7 +172,7 @@ test("poserPiece ne modifie jamais l'état reçu", () => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 test("le combo retombe à zéro si aucune pièce du lot n'a cassé de ligne", () => {
-    const etat = etatDeTest(creerGrilleVide(8), [{ id: "p1", forme: "bloc", couleur: 0 }], {
+    const etat = etatDeTest(new Grille(8), [{ id: "p1", forme: "bloc", couleur: 0 }], {
         combo: 3,
         ligneCasseeDansLeLot: false,
     });
@@ -223,22 +231,22 @@ test("le lot tiré est toujours posable en entier", () => {
 });
 
 test("la partie est finie quand plus aucune pièce ne rentre", () => {
-    const pleine = creerGrilleVide(8);
+    const pleine = new Grille(8);
     for (let ligne = 0; ligne < 8; ligne++) {
-        for (let colonne = 0; colonne < 8; colonne++) pleine[ligne][colonne] = 1;
+        for (let colonne = 0; colonne < 8; colonne++) pleine.ecrireCase(ligne, colonne, 1);
     }
-    pleine[0][0] = 0;
+    pleine.ecrireCase(0, 0, 0);
 
     assert.equal(partieTerminee(etatDeTest(pleine, [{ id: "p1", forme: "carre_2x2", couleur: 0 }])), true);
     assert.equal(partieTerminee(etatDeTest(pleine, [{ id: "p1", forme: "bloc", couleur: 0 }])), false);
 });
 
 test("basculerCase remplit puis vide une case", () => {
-    const etat = etatDeTest(creerGrilleVide(8), []);
+    const etat = etatDeTest(new Grille(8), []);
 
     const remplie = basculerCase(etat, 2, 3);
-    assert.equal(remplie.grille[2][3], 1);
-    assert.equal(etat.grille[2][3], 0, "l'état d'origine ne doit pas bouger");
+    assert.equal(remplie.grille.lireCase(2, 3), 1);
+    assert.equal(etat.grille.lireCase(2, 3), 0, "l'état d'origine ne doit pas bouger");
 
-    assert.equal(basculerCase(remplie, 2, 3).grille[2][3], 0);
+    assert.equal(basculerCase(remplie, 2, 3).grille.lireCase(2, 3), 0);
 });

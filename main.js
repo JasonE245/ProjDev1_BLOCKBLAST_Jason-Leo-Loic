@@ -113,7 +113,7 @@ function surPosePiece(idPiece, ligne, colonne) {
     if (piece === null) return;
 
     // calculé AVANT la pose : après, les lignes ont déjà sauté et il n'y aurait plus rien à faire clignoter
-    const cassees = lignesCasseesPar(etat.grille, piece.forme, ligne, colonne);
+    const cassees = etat.grille.lignesCasseesPar(piece.forme, ligne, colonne);
 
     etat = poserPiece(etat, idPiece, ligne, colonne);
 

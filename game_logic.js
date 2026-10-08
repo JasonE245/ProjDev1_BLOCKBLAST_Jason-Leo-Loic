@@ -160,204 +160,225 @@ function etatAvec(etat, changements) {
 // grille
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/**
- * fabrique une grille carrée entièrement vide
- * :param taille: nombre de lignes, qui est aussi le nombre de colonnes
- * :return: un tableau de tableaux ne contenant que des 0
- */
-function creerGrilleVide(taille) {
-    const grille = [];
+// la grille de jeu : un carré de cases qui valent 0 quand elles sont vides, et la couleur de la pièce posée (1 à 4)
+// quand elles sont occupées
+class Grille {
+    /**
+     * fabrique une grille carrée entièrement vide
+     * :param taille: nombre de lignes, qui est aussi le nombre de colonnes
+     */
+    constructor(taille) {
+        this.taille = taille;
+        this.cases = [];
 
-    for (let ligne = 0; ligne < taille; ligne++) {
-        grille.push([]);
-        for (let colonne = 0; colonne < taille; colonne++) {
-            grille[ligne].push(0);
-        }
-    }
-    return grille;
-}
-
-/**
- * fabrique une copie indépendante de la grille
- * sans cette copie, écrire dans la nouvelle grille modifierait aussi l'ancienne
- * :param grille: la grille à copier
- * :return: une nouvelle grille de mêmes valeurs
- */
-function copierGrille(grille) {
-    const copie = [];
-
-    for (const ligne of grille) {
-        // slice() sans argument renvoie une copie de la ligne, et non la ligne elle-même
-        copie.push(ligne.slice());
-    }
-    return copie;
-}
-
-/**
- * vérifie si la grille ne contient plus aucune case occupée
- * :param grille: la grille à vérifier
- * :return: true si toutes les cases valent 0, sinon false
- */
-function grilleEstVide(grille) {
-    for (let ligne = 0; ligne < grille.length; ligne++) {
-        for (let colonne = 0; colonne < grille.length; colonne++) {
-            if (grille[ligne][colonne] !== 0) return false;
-        }
-    }
-    return true;
-}
-
-/**
- * fabrique une copie de la grille avec une forme dessinée dessus
- * :param grille: la grille de départ, qui n'est pas modifiée
- * :param forme: nom de la forme à dessiner
- * :param ligne: ligne du coin haut-gauche
- * :param colonne: colonne du coin haut-gauche
- * :param valeur: valeur à écrire dans les cases de la forme (0 = vide, 1 à 4 = couleur)
- * :return: une nouvelle grille
- */
-function grilleAvecForme(grille, forme, ligne, colonne, valeur) {
-    const nouvelle = copierGrille(grille);
-
-    for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
-        nouvelle[l][c] = valeur;
-    }
-    return nouvelle;
-}
-
-/**
- * fabrique une copie de la grille où les lignes et colonnes indiquées sont vidées
- * :param grille: la grille de départ, qui n'est pas modifiée
- * :param pleines: objet {lignes, colonnes} contenant les index à vider
- * :return: une nouvelle grille
- */
-function grilleSansLignes(grille, pleines) {
-    const taille = grille.length;
-    const nouvelle = copierGrille(grille);
-
-    // on vide chaque ligne pleine, de gauche à droite
-    for (const ligne of pleines.lignes) {
-        for (let colonne = 0; colonne < taille; colonne++) {
-            nouvelle[ligne][colonne] = 0;
-        }
-    }
-    // puis chaque colonne pleine, de haut en bas
-    for (const colonne of pleines.colonnes) {
         for (let ligne = 0; ligne < taille; ligne++) {
-            nouvelle[ligne][colonne] = 0;
+            this.cases.push([]);
+            for (let colonne = 0; colonne < taille; colonne++) {
+                this.cases[ligne].push(0);
+            }
         }
     }
-    return nouvelle;
-}
 
-/**
- * vérifie si une ligne de la grille est entièrement occupée
- * :param grille: la grille à vérifier
- * :param ligne: index de la ligne
- * :return: true si aucune case de la ligne ne vaut 0, sinon false
- */
-function lignePleine(grille, ligne) {
-    for (let colonne = 0; colonne < grille.length; colonne++) {
-        if (grille[ligne][colonne] === 0) return false;
+    /**
+     * lit la valeur d'une case
+     * :param ligne: ligne de la case
+     * :param colonne: colonne de la case
+     * :return: 0 si la case est vide, sinon la couleur de la pièce posée (1 à 4)
+     */
+    lireCase(ligne, colonne) {
+        return this.cases[ligne][colonne];
     }
-    return true;
-}
 
-/**
- * vérifie si une colonne de la grille est entièrement occupée
- * :param grille: la grille à vérifier
- * :param colonne: index de la colonne
- * :return: true si aucune case de la colonne ne vaut 0, sinon false
- */
-function colonnePleine(grille, colonne) {
-    for (let ligne = 0; ligne < grille.length; ligne++) {
-        if (grille[ligne][colonne] === 0) return false;
+    /**
+     * écrit une valeur dans une case
+     * :param ligne: ligne de la case
+     * :param colonne: colonne de la case
+     * :param valeur: 0 pour vider la case, 1 à 4 pour la remplir avec une couleur
+     * :return: rien, la grille est modifiée
+     */
+    ecrireCase(ligne, colonne, valeur) {
+        this.cases[ligne][colonne] = valeur;
     }
-    return true;
-}
 
-/**
- * cherche toutes les lignes et toutes les colonnes entièrement occupées
- * :param grille: la grille à examiner
- * :return: un objet {lignes, colonnes} contenant leurs index
- */
-function chercherLignesPleines(grille) {
-    const lignes = [];
-    const colonnes = [];
+    /**
+     * fabrique une copie indépendante de la grille
+     * sans cette copie, écrire dans la nouvelle grille modifierait aussi l'ancienne
+     * :return: une nouvelle Grille avec les mêmes valeurs
+     */
+    copier() {
+        const copie = new Grille(this.taille);
 
-    for (let ligne = 0; ligne < grille.length; ligne++) {
-        if (lignePleine(grille, ligne)) lignes.push(ligne);
+        for (let ligne = 0; ligne < this.taille; ligne++) {
+            for (let colonne = 0; colonne < this.taille; colonne++) {
+                copie.ecrireCase(ligne, colonne, this.lireCase(ligne, colonne));
+            }
+        }
+        return copie;
     }
-    for (let colonne = 0; colonne < grille.length; colonne++) {
-        if (colonnePleine(grille, colonne)) colonnes.push(colonne);
+
+    /**
+     * vérifie si la grille ne contient plus aucune case occupée
+     * :return: true si toutes les cases valent 0, sinon false
+     */
+    estVide() {
+        for (let ligne = 0; ligne < this.taille; ligne++) {
+            for (let colonne = 0; colonne < this.taille; colonne++) {
+                if (this.lireCase(ligne, colonne) !== 0) return false;
+            }
+        }
+        return true;
     }
-    return { lignes, colonnes };
-}
 
-/**
- * vérifie si une forme peut être posée à un endroit précis
- * :param grille: la grille de jeu
- * :param forme: nom de la forme à poser
- * :param ligne: ligne du coin haut-gauche
- * :param colonne: colonne du coin haut-gauche
- * :return: true si toutes les cases de la forme sont dans la grille et vides, sinon false
- */
-function peutPoser(grille, forme, ligne, colonne) {
-    const taille = grille.length;
-
-    for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
-        // la case sort de la grille
-        if (l < 0 || l >= taille || c < 0 || c >= taille) return false;
-        // la case est déjà occupée
-        if (grille[l][c] !== 0) return false;
+    /**
+     * vérifie si une forme peut être posée à un endroit précis
+     * :param forme: nom de la forme à poser
+     * :param ligne: ligne du coin haut-gauche
+     * :param colonne: colonne du coin haut-gauche
+     * :return: true si toutes les cases de la forme sont dans la grille et vides, sinon false
+     */
+    peutPoser(forme, ligne, colonne) {
+        for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
+            // la case sort de la grille
+            if (l < 0 || l >= this.taille || c < 0 || c >= this.taille) return false;
+            // la case est déjà occupée
+            if (this.lireCase(l, c) !== 0) return false;
+        }
+        return true;
     }
-    return true;
-}
 
-/**
- * vérifie s'il existe au moins un endroit de la grille où la forme rentre
- * :param grille: la grille de jeu
- * :param forme: nom de la forme à tester
- * :return: true si la forme rentre quelque part, sinon false
- */
-function peutPoserQuelquePart(grille, forme) {
-    for (let ligne = 0; ligne < grille.length; ligne++) {
-        for (let colonne = 0; colonne < grille.length; colonne++) {
-            if (peutPoser(grille, forme, ligne, colonne)) return true;
+    /**
+     * vérifie s'il existe au moins un endroit de la grille où la forme rentre
+     * :param forme: nom de la forme à tester
+     * :return: true si la forme rentre quelque part, sinon false
+     */
+    peutPoserQuelquePart(forme) {
+        for (let ligne = 0; ligne < this.taille; ligne++) {
+            for (let colonne = 0; colonne < this.taille; colonne++) {
+                if (this.peutPoser(forme, ligne, colonne)) return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * dessine une forme sur la grille, sans vérifier qu'elle rentre (c'est le rôle de peutPoser)
+     * :param forme: nom de la forme à dessiner
+     * :param ligne: ligne du coin haut-gauche
+     * :param colonne: colonne du coin haut-gauche
+     * :param valeur: valeur à écrire dans les cases de la forme (1 à 4 = couleur)
+     * :return: rien, la grille est modifiée
+     */
+    poserForme(forme, ligne, colonne, valeur) {
+        for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
+            this.ecrireCase(l, c, valeur);
         }
     }
-    return false;
-}
 
-/**
- * calcule les lignes et colonnes qui sauteraient si on posait cette forme ici
- * sert à l'aperçu affiché quand le joueur survole la grille avec une pièce
- * :param grille: la grille de jeu
- * :param forme: nom de la forme
- * :param ligne: ligne du coin haut-gauche
- * :param colonne: colonne du coin haut-gauche
- * :return: un objet {lignes, colonnes}, vide si la pose est impossible
- */
-function lignesCasseesPar(grille, forme, ligne, colonne) {
-    if (!peutPoser(grille, forme, ligne, colonne)) {
-        return { lignes: [], colonnes: [] };
+    /**
+     * vérifie si une ligne de la grille est entièrement occupée
+     * :param ligne: index de la ligne
+     * :return: true si aucune case de la ligne ne vaut 0, sinon false
+     */
+    estLignePleine(ligne) {
+        for (let colonne = 0; colonne < this.taille; colonne++) {
+            if (this.lireCase(ligne, colonne) === 0) return false;
+        }
+        return true;
     }
-    // la couleur n'a aucune importance ici, on écrit 1 pour marquer les cases occupées
-    return chercherLignesPleines(grilleAvecForme(grille, forme, ligne, colonne, 1));
-}
 
-/**
- * calcule la grille telle qu'elle serait après une pose, suppressions comprises
- * sert uniquement aux essais de tirage, où seule la place restante compte
- * :param grille: la grille de départ
- * :param forme: nom de la forme posée
- * :param ligne: ligne du coin haut-gauche
- * :param colonne: colonne du coin haut-gauche
- * :return: une nouvelle grille
- */
-function grilleApresPose(grille, forme, ligne, colonne) {
-    const remplie = grilleAvecForme(grille, forme, ligne, colonne, 1);
-    return grilleSansLignes(remplie, chercherLignesPleines(remplie));
+    /**
+     * vérifie si une colonne de la grille est entièrement occupée
+     * :param colonne: index de la colonne
+     * :return: true si aucune case de la colonne ne vaut 0, sinon false
+     */
+    estColonnePleine(colonne) {
+        for (let ligne = 0; ligne < this.taille; ligne++) {
+            if (this.lireCase(ligne, colonne) === 0) return false;
+        }
+        return true;
+    }
+
+    /**
+     * cherche toutes les lignes et toutes les colonnes entièrement occupées
+     * :return: un objet {lignes, colonnes} contenant leurs index
+     */
+    chercherLignesPleines() {
+        const lignes = [];
+        const colonnes = [];
+
+        for (let ligne = 0; ligne < this.taille; ligne++) {
+            if (this.estLignePleine(ligne)) lignes.push(ligne);
+        }
+        for (let colonne = 0; colonne < this.taille; colonne++) {
+            if (this.estColonnePleine(colonne)) colonnes.push(colonne);
+        }
+        return { lignes, colonnes };
+    }
+
+    /**
+     * vide les lignes et colonnes indiquées
+     * :param pleines: objet {lignes, colonnes} contenant les index à vider
+     * :return: rien, la grille est modifiée
+     */
+    viderLignes(pleines) {
+        // on vide chaque ligne pleine, de gauche à droite
+        for (const ligne of pleines.lignes) {
+            for (let colonne = 0; colonne < this.taille; colonne++) {
+                this.ecrireCase(ligne, colonne, 0);
+            }
+        }
+        // puis chaque colonne pleine, de haut en bas
+        for (const colonne of pleines.colonnes) {
+            for (let ligne = 0; ligne < this.taille; ligne++) {
+                this.ecrireCase(ligne, colonne, 0);
+            }
+        }
+    }
+
+    /**
+     * calcule les lignes et colonnes qui sauteraient si on posait cette forme ici, sans rien poser
+     * sert à l'aperçu affiché quand le joueur survole la grille avec une pièce
+     * :param forme: nom de la forme
+     * :param ligne: ligne du coin haut-gauche
+     * :param colonne: colonne du coin haut-gauche
+     * :return: un objet {lignes, colonnes}, vide si la pose est impossible
+     */
+    lignesCasseesPar(forme, ligne, colonne) {
+        if (!this.peutPoser(forme, ligne, colonne)) {
+            return { lignes: [], colonnes: [] };
+        }
+        // on fait l'essai sur une copie, pour ne pas toucher à la vraie grille
+        // la couleur n'a aucune importance ici, on écrit 1 pour marquer les cases occupées
+        const essai = this.copier();
+        essai.poserForme(forme, ligne, colonne, 1);
+        return essai.chercherLignesPleines();
+    }
+
+    /**
+     * calcule la grille telle qu'elle serait après une pose, suppressions comprises, sans toucher à celle-ci
+     * sert uniquement aux essais de tirage, où seule la place restante compte
+     * :param forme: nom de la forme posée
+     * :param ligne: ligne du coin haut-gauche
+     * :param colonne: colonne du coin haut-gauche
+     * :return: une nouvelle Grille
+     */
+    simulerPose(forme, ligne, colonne) {
+        const essai = this.copier();
+        essai.poserForme(forme, ligne, colonne, 1);
+        essai.viderLignes(essai.chercherLignesPleines());
+        return essai;
+    }
+
+    /**
+     * remplit une case vide ou vide une case pleine
+     * sert au mode debug, pour préparer une situation à la main
+     * :param ligne: ligne de la case
+     * :param colonne: colonne de la case
+     * :return: rien, la grille est modifiée
+     */
+    basculerCase(ligne, colonne) {
+        this.ecrireCase(ligne, colonne, this.lireCase(ligne, colonne) === 0 ? 1 : 0);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -510,11 +531,11 @@ function peutToutPoserDansUnOrdre(grille, formes) {
         const restantes = formes.slice();
         restantes.splice(index, 1);
 
-        for (let ligne = 0; ligne < grille.length; ligne++) {
-            for (let colonne = 0; colonne < grille.length; colonne++) {
-                if (!peutPoser(grille, forme, ligne, colonne)) continue;
+        for (let ligne = 0; ligne < grille.taille; ligne++) {
+            for (let colonne = 0; colonne < grille.taille; colonne++) {
+                if (!grille.peutPoser(forme, ligne, colonne)) continue;
 
-                const grilleSuivante = grilleApresPose(grille, forme, ligne, colonne);
+                const grilleSuivante = grille.simulerPose(forme, ligne, colonne);
                 if (peutToutPoserDansUnOrdre(grilleSuivante, restantes)) return true;
             }
         }
@@ -539,11 +560,11 @@ function tirerLotPosable(etat, nombre) {
     // deux essais
     const posables = [];
     for (const forme of Forme.noms()) {
-        if (peutPoserQuelquePart(grille, forme)) posables.push(forme);
+        if (grille.peutPoserQuelquePart(forme)) posables.push(forme);
     }
 
     const sac = construireSacDeFormes(posables.length > 0 ? posables : Forme.noms());
-    const chanceTriple = grilleEstVide(grille) ? CHANCE_TRIPLE_GRILLE_VIDE : CHANCE_TRIPLE_EN_JEU;
+    const chanceTriple = grille.estVide() ? CHANCE_TRIPLE_GRILLE_VIDE : CHANCE_TRIPLE_EN_JEU;
 
     let pieces;
     for (let essai = 0; essai < MAX_ESSAIS_LOT; essai++) {
@@ -572,7 +593,7 @@ function creerEtatInitial(taille = 8, nbCouleurs = 4) {
     const etatVide = {
         taille: taille,
         nbCouleurs: nbCouleurs,
-        grille: creerGrilleVide(taille),
+        grille: new Grille(taille),
         score: 0,
         combo: 0,
         // passe à true dès qu'une ligne saute dans le lot en cours, et décide en fin de lot si le combo est conservé
@@ -602,14 +623,18 @@ function trouverPiece(pieces, id) {
  * :return: un nouvel état, identique si rien n'était plein
  */
 function supprimerLignesPleines(etat) {
-    const pleines = chercherLignesPleines(etat.grille);
+    const pleines = etat.grille.chercherLignesPleines();
     const nbLignes = pleines.lignes.length + pleines.colonnes.length;
 
     // rien de plein : l'état ne change pas
     if (nbLignes === 0) return etat;
 
+    // la grille de l'état reçu ne doit pas bouger : on vide les lignes sur une copie
+    const grille = etat.grille.copier();
+    grille.viderLignes(pleines);
+
     return etatAvec(etat, {
-        grille: grilleSansLignes(etat.grille, pleines),
+        grille: grille,
         score: etat.score + pointsDeSuppression(nbLignes, etat.combo),
         combo: etat.combo + 1,
         ligneCasseeDansLeLot: true,
@@ -627,7 +652,7 @@ function supprimerLignesPleines(etat) {
  */
 function poserPiece(etat, idPiece, ligne, colonne) {
     const piece = trouverPiece(etat.pieces, idPiece);
-    if (piece === null || !peutPoser(etat.grille, piece.forme, ligne, colonne)) {
+    if (piece === null || !etat.grille.peutPoser(piece.forme, ligne, colonne)) {
         return etat;
     }
 
@@ -637,10 +662,13 @@ function poserPiece(etat, idPiece, ligne, colonne) {
         if (autre.id !== idPiece) reserve.push(autre);
     }
 
-    // 1. la pièce est dessinée sur la grille et rapporte un point par case occupée
+    // 1. la pièce est dessinée sur une copie de la grille et rapporte un point par case occupée
     //    on écrit couleur + 1 parce que 0 est réservé aux cases vides
+    const grille = etat.grille.copier();
+    grille.poserForme(piece.forme, ligne, colonne, piece.couleur + 1);
+
     const posee = etatAvec(etat, {
-        grille: grilleAvecForme(etat.grille, piece.forme, ligne, colonne, piece.couleur + 1),
+        grille: grille,
         pieces: reserve,
         score: etat.score + Forme.parNom(piece.forme).nbCases,
     });
@@ -667,7 +695,7 @@ function poserPiece(etat, idPiece, ligne, colonne) {
  */
 function partieTerminee(etat) {
     for (const piece of etat.pieces) {
-        if (peutPoserQuelquePart(etat.grille, piece.forme)) return false;
+        if (etat.grille.peutPoserQuelquePart(piece.forme)) return false;
     }
     return true;
 }
@@ -681,8 +709,8 @@ function partieTerminee(etat) {
  * :return: un nouvel état
  */
 function basculerCase(etat, ligne, colonne) {
-    const grille = copierGrille(etat.grille);
-    grille[ligne][colonne] = grille[ligne][colonne] === 0 ? 1 : 0;
+    const grille = etat.grille.copier();
+    grille.basculerCase(ligne, colonne);
 
     return etatAvec(etat, { grille: grille });
 }
@@ -694,8 +722,7 @@ function basculerCase(etat, ligne, colonne) {
 if (typeof module !== "undefined") {
     module.exports = {
         Forme, GROSSES_FORMES, PIECES_PAR_LOT,
-        creerGrilleVide, copierGrille, chercherLignesPleines, peutPoser, peutPoserQuelquePart,
-        lignesCasseesPar, peutToutPoserDansUnOrdre, construireSacDeFormes,
+        Grille, peutToutPoserDansUnOrdre, construireSacDeFormes,
         pointsDeSuppression, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
     };
 }

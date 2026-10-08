@@ -167,7 +167,7 @@ function afficherGrille(etat) {
             element.dataset.colonne = colonne;
 
             // 0 = case vide, 1 à 4 = couleur de la pièce posée, d'où le -1
-            const valeur = etat.grille[ligne][colonne];
+            const valeur = etat.grille.lireCase(ligne, colonne);
             if (valeur !== 0) colorerCase(element, valeur - 1);
 
             conteneur.appendChild(element);
@@ -200,7 +200,7 @@ function effacerApercu() {
 function afficherApercu(etat, forme, ligne, colonne) {
     effacerApercu();
 
-    const valide = peutPoser(etat.grille, forme, ligne, colonne);
+    const valide = etat.grille.peutPoser(forme, ligne, colonne);
 
     for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
         // une forme survolée près d'un bord déborde de la grille : caseGrille ne trouve alors aucune case, et il n'y
@@ -215,7 +215,7 @@ function afficherApercu(etat, forme, ligne, colonne) {
     if (!valide) return;
 
     // met en évidence les lignes et colonnes que cette pose ferait sauter
-    const cassees = lignesCasseesPar(etat.grille, forme, ligne, colonne);
+    const cassees = etat.grille.lignesCasseesPar(forme, ligne, colonne);
     for (const element of casesDesLignes(etat.taille, cassees)) {
         element.classList.add("apercu-suppression");
     }
