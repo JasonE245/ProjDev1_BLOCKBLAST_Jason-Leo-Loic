@@ -12,10 +12,67 @@
 // thèmes de couleurs
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Themes est une classe sans état, comme Bareme : elle range la liste des thèmes et ce qui sert à les appliquer
+class Themes {
+    /**
+     * applique un thème à toute la page
+     * les couleurs sont posées comme variables CSS : le reste de la mise en forme y fait référence sans les connaître
+     * :param theme: un des objets de Themes.LISTE
+     * :return: rien, la page change de couleurs
+     */
+    static appliquer(theme) {
+        const racine = document.documentElement.style;
+
+        racine.setProperty("--couleur-fond", theme.fond);
+        racine.setProperty("--fond-grille", theme.grille);
+        racine.setProperty("--couleur-case", theme.case);
+        racine.setProperty("--couleur-pleine", theme.pleine);
+
+        // une variable par nuance de pièce => --couleur-piece-0, --couleur-piece-1, etc.
+        for (let index = 0; index < theme.pieces.length; index++) {
+            racine.setProperty(`--couleur-piece-${index}`, theme.pieces[index]);
+        }
+    }
+
+    /**
+     * retrouve un thème à partir de son nom
+     * :param nom: nom du thème cherché, ou null au tout premier lancement
+     * :return: le thème qui porte ce nom, ou le premier de la liste si aucun ne correspond
+     */
+    static trouverParNom(nom) {
+        for (const theme of Themes.LISTE) {
+            if (theme.nom === nom) return theme;
+        }
+        return Themes.LISTE[0];
+    }
+
+    /**
+     * remplit le panneau de choix de thème et branche le bouton qui l'ouvre
+     * :param surChoix: fonction appelée avec le thème choisi quand le joueur clique une pastille
+     * :return: rien, le panneau est rempli
+     */
+    static afficherChoix(surChoix) {
+        const panneau = document.getElementById("panneau-themes");
+
+        for (const theme of Themes.LISTE) {
+            const pastille = document.createElement("button");
+            pastille.className = "pastille-theme";
+            pastille.style.background = theme.pleine;
+            pastille.title = theme.nom;
+            pastille.addEventListener("click", () => surChoix(theme));
+            panneau.appendChild(pastille);
+        }
+
+        document.getElementById("bouton-theme").addEventListener("click", () => {
+            panneau.classList.toggle("ouvert");
+        });
+    }
+}
+
 // chaque thème donne les couleurs de l'interface, plus une liste de nuances pour les pièces posées
 // la longueur de cette liste est la seule source de vérité pour le nombre de couleurs du jeu : ajouter une nuance ici
 // suffit, le reste du programme suit tout seul
-const themes = [
+Themes.LISTE = [
     {
         nom: "mauve", fond: "#1e1e2e", grille: "#313244", case: "#45475a", pleine: "#89b4fa",
         pieces: ["#89b4fa", "#74c7ec", "#94e2d5", "#b4befe"],
@@ -35,49 +92,7 @@ const themes = [
 ];
 
 // nombre de couleurs de pièces, déduit du premier thème
-const NB_COULEURS_PIECES = themes[0].pieces.length;
-
-/**
- * applique un thème à toute la page
- * les couleurs sont posées comme variables CSS : le reste de la mise en forme y fait référence sans les connaître
- * :param theme: un des objets de la liste themes
- * :return: rien, la page change de couleurs
- */
-function appliquerTheme(theme) {
-    const racine = document.documentElement.style;
-
-    racine.setProperty("--couleur-fond", theme.fond);
-    racine.setProperty("--fond-grille", theme.grille);
-    racine.setProperty("--couleur-case", theme.case);
-    racine.setProperty("--couleur-pleine", theme.pleine);
-
-    // une variable par nuance de pièce => --couleur-piece-0, --couleur-piece-1, etc.
-    for (let index = 0; index < theme.pieces.length; index++) {
-        racine.setProperty(`--couleur-piece-${index}`, theme.pieces[index]);
-    }
-}
-
-/**
- * remplit le panneau de choix de thème et branche le bouton qui l'ouvre
- * :param surChoix: fonction appelée avec le thème choisi quand le joueur clique une pastille
- * :return: rien, le panneau est rempli
- */
-function afficherChoixTheme(surChoix) {
-    const panneau = document.getElementById("panneau-themes");
-
-    for (const theme of themes) {
-        const pastille = document.createElement("button");
-        pastille.className = "pastille-theme";
-        pastille.style.background = theme.pleine;
-        pastille.title = theme.nom;
-        pastille.addEventListener("click", () => surChoix(theme));
-        panneau.appendChild(pastille);
-    }
-
-    document.getElementById("bouton-theme").addEventListener("click", () => {
-        panneau.classList.toggle("ouvert");
-    });
-}
+Themes.NB_COULEURS = Themes.LISTE[0].pieces.length;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // grille
@@ -134,7 +149,7 @@ function casesDesLignes(taille, pleines) {
  * on passe par la variable --remplissage-case et non par une classe : le CSS n'a ainsi pas besoin de connaître le
  * nombre de couleurs, et les classes d'aperçu restent prioritaires sur la couleur de la pièce
  * :param element: l'élément de la case
- * :param couleur: index de la nuance, de 0 à NB_COULEURS_PIECES - 1
+ * :param couleur: index de la nuance, de 0 à Themes.NB_COULEURS - 1
  * :return: rien, la case change de couleur
  */
 function colorerCase(element, couleur) {

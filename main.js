@@ -83,7 +83,7 @@ const CLE_RECORD = "blockblast-record";
 const CLE_THEME = "blockblast-theme";
 
 // la partie en cours
-let partie = new Partie(TAILLE_GRILLE, NB_COULEURS_PIECES);
+let partie = new Partie(TAILLE_GRILLE, Themes.NB_COULEURS);
 
 // Number(null) vaut 0, et le "|| 0" couvre le cas où la valeur enregistrée ne serait pas un nombre
 let record = Number(localStorage.getItem(CLE_RECORD)) || 0;
@@ -144,7 +144,7 @@ function surBasculeCase(ligne, colonne) {
  * :return: rien
  */
 function surRejouer() {
-    partie = new Partie(TAILLE_GRILLE, NB_COULEURS_PIECES);
+    partie = new Partie(TAILLE_GRILLE, Themes.NB_COULEURS);
     afficherTout();
 }
 
@@ -154,7 +154,7 @@ function surRejouer() {
  * :return: rien
  */
 function surChoixTheme(theme) {
-    appliquerTheme(theme);
+    Themes.appliquer(theme);
     localStorage.setItem(CLE_THEME, theme.nom);
 }
 
@@ -163,13 +163,8 @@ function surChoixTheme(theme) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // on retrouve le thème choisi la dernière fois, et à défaut on prend le premier de la liste
-let themeEnregistre = null;
-for (const theme of themes) {
-    if (theme.nom === localStorage.getItem(CLE_THEME)) themeEnregistre = theme;
-}
-appliquerTheme(themeEnregistre !== null ? themeEnregistre : themes[0]);
-
-afficherChoixTheme(surChoixTheme);
+Themes.appliquer(Themes.trouverParNom(localStorage.getItem(CLE_THEME)));
+Themes.afficherChoix(surChoixTheme);
 initInteractionsGrille(surPosePiece, surBasculeCase);
 initRaccourciDebug();
 document.getElementById("bouton-rejouer").addEventListener("click", surRejouer);
