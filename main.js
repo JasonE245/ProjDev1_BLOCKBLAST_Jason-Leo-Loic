@@ -165,9 +165,9 @@ function surChoixTheme(theme) {
 // on retrouve le thème choisi la dernière fois, et à défaut on prend le premier de la liste
 Themes.appliquer(Themes.trouverParNom(localStorage.getItem(CLE_THEME)));
 Themes.afficherChoix(surChoixTheme);
-initInteractionsGrille(surPosePiece);
+const glisserDeposer = new GlisserDeposer(surPosePiece);
 new ModeDebug(surBasculeCase);
 const vueScore = new VueScore(surRejouer);
-const vueReserve = new VueReserve();
+const vueReserve = new VueReserve(glisserDeposer);
 
 afficherTout();

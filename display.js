@@ -105,9 +105,6 @@ const TAILLE_CASE = 40;
 // chaque affichage : ils viennent lire l'état courant ici.
 let etatAffiche = null;
 
-// identifiant de la pièce en cours de glisser-déposer, ou null. C'est de l'affichage, pas de l'état du jeu.
-let idPieceGlissee = null;
-
 /**
  * retrouve l'élément d'une case de la grille à partir de ses coordonnées
  * :param ligne: ligne cherchée
@@ -255,94 +252,117 @@ function animerLignesCassees(etat, cassees) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// interactions sur la grille
+// glisser-déposer
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/**
- * traduit la position du curseur en coin haut-gauche de la forme
- * sans ce calcul la pièce s'accrocherait par son coin, alors qu'on veut qu'elle paraisse centrée sous le curseur
- * :param forme: nom de la forme glissée
- * :param element: la case survolée
- * :param evenement: l'événement de souris, pour la position exacte dans la case
- * :return: un objet {ligne, colonne}, éventuellement hors de la grille
- */
-function origineDeLaPose(forme, element, evenement) {
-    const taille = Forme.parNom(forme).taille();
+// le glisser-déposer d'une pièce de la réserve vers la grille
+// les écouteurs sont posés sur la grille elle-même et non sur chacune des 64 cases : deux écouteurs au lieu de cent
+// vingt-huit, et surtout rien à rebrancher après un affichage, puisque la grille survit alors que les cases sont
+// recréées à chaque tour
+class GlisserDeposer {
+    /**
+     * branche les écouteurs sur la grille
+     * :param surPose: fonction appelée avec (idPiece, ligne, colonne) quand le joueur lâche une pièce
+     */
+    constructor(surPose) {
+        this.surPose = surPose;
+        // identifiant de la pièce en cours de glisser-déposer, ou null. C'est de l'affichage, pas de l'état du jeu.
+        this.idPieceGlissee = null;
 
-    // position du curseur en nombre de cases, virgule comprise
-    const ligneCurseur = Number(element.dataset.ligne) + evenement.offsetY / TAILLE_CASE;
-    const colonneCurseur = Number(element.dataset.colonne) + evenement.offsetX / TAILLE_CASE;
+        // les fonctions fléchées gardent "this" : sans elles, this désignerait la grille et non le glisser-déposer
+        const conteneur = document.getElementById("grille");
+        conteneur.addEventListener("dragover", (evenement) => this.gererSurvol(evenement));
+        conteneur.addEventListener("drop", (evenement) => this.gererLacher(evenement));
+    }
 
-    // on recule d'une demi-forme pour que le curseur se retrouve au milieu
-    return {
-        ligne: Math.round(ligneCurseur - taille.lignes / 2),
-        colonne: Math.round(colonneCurseur - taille.colonnes / 2),
-    };
-}
+    /**
+     * appelée par la réserve quand le joueur attrape une pièce
+     * :param idPiece: identifiant de la pièce attrapée
+     * :return: rien
+     */
+    commencer(idPiece) {
+        this.idPieceGlissee = idPiece;
+    }
 
-/**
- * branche les écouteurs sur la grille
- * ils sont posés sur la grille elle-même et non sur chacune des 64 cases : deux écouteurs au lieu de cent
- * vingt-huit, et surtout rien à rebrancher après un affichage, puisque la grille survit alors que les cases sont
- * recréées à chaque tour
- * :param surPose: fonction appelée avec (idPiece, ligne, colonne) quand le joueur lâche une pièce
- * :return: rien, les écouteurs sont en place
- */
-function initInteractionsGrille(surPose) {
-    const conteneur = document.getElementById("grille");
+    /**
+     * appelée par la réserve quand le joueur relâche la pièce, sur la grille ou ailleurs
+     * :return: rien
+     */
+    terminer() {
+        this.idPieceGlissee = null;
+        effacerApercu();
+    }
 
-    conteneur.addEventListener("dragover", surSurvolGlisser);
-    conteneur.addEventListener("drop", (evenement) => surLacher(evenement, surPose));
-}
+    /**
+     * traduit la position du curseur en coin haut-gauche de la forme
+     * sans ce calcul la pièce s'accrocherait par son coin, alors qu'on veut qu'elle paraisse centrée sous le curseur
+     * :param forme: nom de la forme glissée
+     * :param element: la case survolée
+     * :param evenement: l'événement de souris, pour la position exacte dans la case
+     * :return: un objet {ligne, colonne}, éventuellement hors de la grille
+     */
+    calculerOrigine(forme, element, evenement) {
+        const taille = Forme.parNom(forme).taille();
 
-/**
- * retrouve la case survolée et la pièce en cours de glisser
- * :param evenement: l'événement de souris
- * :return: un objet {element, piece}, ou null si l'événement ne concerne pas une case ou si rien n'est glissé
- */
-function pieceGlisseeSur(evenement) {
-    // closest remonte de l'élément touché jusqu'à la case qui le contient ; renvoie null pour la marge de la grille
-    const element = evenement.target.closest(".case");
-    if (element === null || etatAffiche === null) return null;
+        // position du curseur en nombre de cases, virgule comprise
+        const ligneCurseur = Number(element.dataset.ligne) + evenement.offsetY / TAILLE_CASE;
+        const colonneCurseur = Number(element.dataset.colonne) + evenement.offsetX / TAILLE_CASE;
 
-    const piece = etatAffiche.trouverPiece(idPieceGlissee);
-    if (piece === null) return null;
+        // on recule d'une demi-forme pour que le curseur se retrouve au milieu
+        return {
+            ligne: Math.round(ligneCurseur - taille.lignes / 2),
+            colonne: Math.round(colonneCurseur - taille.colonnes / 2),
+        };
+    }
 
-    return { element: element, piece: piece };
-}
+    /**
+     * retrouve la case survolée et la pièce en cours de glisser
+     * :param evenement: l'événement de souris
+     * :return: un objet {element, piece}, ou null si l'événement ne concerne pas une case ou si rien n'est glissé
+     */
+    trouverCible(evenement) {
+        // closest remonte de l'élément touché jusqu'à la case qui le contient ; renvoie null pour la marge de la grille
+        const element = evenement.target.closest(".case");
+        if (element === null || etatAffiche === null) return null;
 
-/**
- * montre l'aperçu pendant que le joueur promène une pièce au-dessus de la grille
- * :param evenement: l'événement dragover
- * :return: rien
- */
-function surSurvolGlisser(evenement) {
-    const cible = pieceGlisseeSur(evenement);
-    if (cible === null) return;
+        const piece = etatAffiche.trouverPiece(this.idPieceGlissee);
+        if (piece === null) return null;
 
-    // sans preventDefault, le navigateur refuse le lâcher sur cette case
-    evenement.preventDefault();
-    evenement.dataTransfer.dropEffect = "move";
+        return { element: element, piece: piece };
+    }
 
-    const origine = origineDeLaPose(cible.piece.forme, cible.element, evenement);
-    afficherApercu(etatAffiche, cible.piece.forme, origine.ligne, origine.colonne);
-}
+    /**
+     * montre l'aperçu pendant que le joueur promène une pièce au-dessus de la grille
+     * :param evenement: l'événement dragover
+     * :return: rien
+     */
+    gererSurvol(evenement) {
+        const cible = this.trouverCible(evenement);
+        if (cible === null) return;
 
-/**
- * prévient la couche de contrôle quand le joueur lâche une pièce sur la grille
- * :param evenement: l'événement drop
- * :param surPose: fonction à appeler avec (idPiece, ligne, colonne)
- * :return: rien
- */
-function surLacher(evenement, surPose) {
-    const cible = pieceGlisseeSur(evenement);
-    if (cible === null) return;
+        // sans preventDefault, le navigateur refuse le lâcher sur cette case
+        evenement.preventDefault();
+        evenement.dataTransfer.dropEffect = "move";
 
-    evenement.preventDefault();
-    effacerApercu();
+        const origine = this.calculerOrigine(cible.piece.forme, cible.element, evenement);
+        afficherApercu(etatAffiche, cible.piece.forme, origine.ligne, origine.colonne);
+    }
 
-    const origine = origineDeLaPose(cible.piece.forme, cible.element, evenement);
-    surPose(cible.piece.id, origine.ligne, origine.colonne);
+    /**
+     * prévient le programme principal quand le joueur lâche une pièce sur la grille
+     * :param evenement: l'événement drop
+     * :return: rien
+     */
+    gererLacher(evenement) {
+        const cible = this.trouverCible(evenement);
+        if (cible === null) return;
+
+        evenement.preventDefault();
+        effacerApercu();
+
+        const origine = this.calculerOrigine(cible.piece.forme, cible.element, evenement);
+        this.surPose(cible.piece.id, origine.ligne, origine.colonne);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -416,8 +436,12 @@ ModeDebug.CODE = "debug";
 
 // l'affichage des pièces proposées au joueur, chacune prête à être glissée sur la grille
 class VueReserve {
-    constructor() {
+    /**
+     * :param glisserDeposer: le GlisserDeposer à prévenir quand le joueur attrape ou relâche une pièce
+     */
+    constructor(glisserDeposer) {
         this.conteneur = document.getElementById("reserve");
+        this.glisserDeposer = glisserDeposer;
     }
 
     /**
@@ -473,7 +497,7 @@ class VueReserve {
         }
 
         element.addEventListener("dragstart", (evenement) => {
-            idPieceGlissee = piece.id;
+            this.glisserDeposer.commencer(piece.id);
 
             // Firefox refuse de démarrer un glisser si aucune donnée n'est associée à l'événement
             evenement.dataTransfer.setData("text/plain", piece.id);
@@ -487,9 +511,8 @@ class VueReserve {
         });
 
         element.addEventListener("dragend", () => {
-            idPieceGlissee = null;
             element.classList.remove("en-glissement");
-            effacerApercu();
+            this.glisserDeposer.terminer();
         });
 
         return element;
