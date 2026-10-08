@@ -389,39 +389,46 @@ class Grille {
 //      score = 30 x L! x min(combo + 1, 6 x L)
 // où L est le nombre de lignes et colonnes cassées du même coup, et combo le nombre de lots d'affilée qui ont cassé
 // une ligne. Non couvert : le bonus quand la grille se vide entièrement.
-const POINTS_PAR_LIGNE = 30;
-const PLAFOND_COMBO_PAR_LIGNE = 6;
+//
+// Bareme est une classe sans état : on n'en crée jamais, on appelle directement Bareme.calculerPoints(). Elle sert à
+// ranger ensemble le calcul et ses constantes.
+class Bareme {
+    /**
+     * calcule la factorielle d'un nombre => 4! = 1 x 2 x 3 x 4 = 24
+     * :param n: le nombre de départ
+     * :return: le produit de tous les entiers de 1 à n
+     */
+    static factorielle(n) {
+        let resultat = 1;
+
+        for (let i = 2; i <= n; i++) {
+            resultat *= i;
+        }
+        return resultat;
+    }
+
+    /**
+     * calcule les points rapportés par une suppression
+     * :param nbLignes: nombre de lignes et de colonnes cassées du même coup
+     * :param combo: nombre de lots d'affilée ayant déjà cassé une ligne
+     * :return: le nombre de points à ajouter au score
+     */
+    static calculerPoints(nbLignes, combo) {
+        const lignes = Math.min(nbLignes, Bareme.MAX_LIGNES_COMPTEES);
+        const multiplicateur = Math.min(combo + 1, Bareme.PLAFOND_COMBO_PAR_LIGNE * lignes);
+
+        return Bareme.POINTS_PAR_LIGNE * Bareme.factorielle(lignes) * multiplicateur;
+    }
+}
+
+// les constantes sont posées après la classe et non dedans : la syntaxe "static X = ..." n'est pas comprise par tous
+// les navigateurs (c'est elle qui avait cassé le jeu sous Firefox)
+Bareme.POINTS_PAR_LIGNE = 30;
+Bareme.PLAFOND_COMBO_PAR_LIGNE = 6;
 
 // une pièce casse au plus 6 lignes d'un coup : 5 lignes plus 1 colonne avec une ligne5, ou 3 plus 3 avec un carré 3x3
 // la borne évite que la factorielle s'emballe si une forme plus grosse était ajoutée un jour
-const MAX_LIGNES_COMPTEES = 6;
-
-/**
- * calcule la factorielle d'un nombre => 4! = 1 x 2 x 3 x 4 = 24
- * :param n: le nombre de départ
- * :return: le produit de tous les entiers de 1 à n
- */
-function factorielle(n) {
-    let resultat = 1;
-
-    for (let i = 2; i <= n; i++) {
-        resultat *= i;
-    }
-    return resultat;
-}
-
-/**
- * calcule les points rapportés par une suppression
- * :param nbLignes: nombre de lignes et de colonnes cassées du même coup
- * :param combo: nombre de lots d'affilée ayant déjà cassé une ligne
- * :return: le nombre de points à ajouter au score
- */
-function pointsDeSuppression(nbLignes, combo) {
-    const lignes = Math.min(nbLignes, MAX_LIGNES_COMPTEES);
-    const multiplicateur = Math.min(combo + 1, PLAFOND_COMBO_PAR_LIGNE * lignes);
-
-    return POINTS_PAR_LIGNE * factorielle(lignes) * multiplicateur;
-}
+Bareme.MAX_LIGNES_COMPTEES = 6;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // tirage des pièces
@@ -635,7 +642,7 @@ function supprimerLignesPleines(etat) {
 
     return etatAvec(etat, {
         grille: grille,
-        score: etat.score + pointsDeSuppression(nbLignes, etat.combo),
+        score: etat.score + Bareme.calculerPoints(nbLignes, etat.combo),
         combo: etat.combo + 1,
         ligneCasseeDansLeLot: true,
     });
@@ -723,6 +730,6 @@ if (typeof module !== "undefined") {
     module.exports = {
         Forme, GROSSES_FORMES, PIECES_PAR_LOT,
         Grille, peutToutPoserDansUnOrdre, construireSacDeFormes,
-        pointsDeSuppression, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
+        Bareme, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
     };
 }

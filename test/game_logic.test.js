@@ -14,7 +14,7 @@ const assert = require("node:assert/strict");
 const {
     Forme, GROSSES_FORMES, PIECES_PAR_LOT,
     Grille, peutToutPoserDansUnOrdre, construireSacDeFormes,
-    pointsDeSuppression, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
+    Bareme, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
 } = require("../game_logic.js");
 
 /**
@@ -147,7 +147,7 @@ test("compléter une ligne la vide et rapporte les points de suppression", () =>
     for (let colonne = 0; colonne < 8; colonne++) {
         assert.equal(suivant.grille.lireCase(0, colonne), 0, "la ligne aurait dû être vidée");
     }
-    assert.equal(suivant.score, 1 + pointsDeSuppression(1, 0));
+    assert.equal(suivant.score, 1 + Bareme.calculerPoints(1, 0));
     assert.equal(suivant.combo, 1);
 });
 
@@ -194,10 +194,10 @@ test("le combo tient si une pièce du lot a cassé une ligne", () => {
 });
 
 test("le barème suit la formule annoncée et reste borné", () => {
-    assert.equal(pointsDeSuppression(1, 0), 30);
-    assert.equal(pointsDeSuppression(2, 0), 60);
-    assert.equal(pointsDeSuppression(2, 5), 360);
-    assert.equal(pointsDeSuppression(20, 0), pointsDeSuppression(6, 0));
+    assert.equal(Bareme.calculerPoints(1, 0), 30);
+    assert.equal(Bareme.calculerPoints(2, 0), 60);
+    assert.equal(Bareme.calculerPoints(2, 5), 360);
+    assert.equal(Bareme.calculerPoints(20, 0), Bareme.calculerPoints(6, 0));
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
