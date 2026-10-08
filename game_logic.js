@@ -434,157 +434,160 @@ Bareme.MAX_LIGNES_COMPTEES = 6;
 // tirage des pièces
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// un lot sur trois est composé de trois fois la même forme quand la grille est vide, contre 3 % en cours de partie
-// c'est le comportement du jeu original
-const CHANCE_TRIPLE_GRILLE_VIDE = 1 / 3;
-const CHANCE_TRIPLE_EN_JEU = 0.03;
+// Tirage regroupe tout ce qui sert à choisir les pièces proposées au joueur. Comme Bareme, c'est une classe sans état :
+// on appelle directement Tirage.tirerLot().
+class Tirage {
+    /**
+     * construit le sac dans lequel on tire les formes
+     * chaque forme y est déposée une fois, les grosses POIDS_GROSSE_FORME fois : tirer au hasard dans ce sac revient à
+     * donner plus de chances aux grosses formes, sans avoir à calculer quoi que ce soit au moment du tirage
+     * :param formes: liste des noms de formes autorisées
+     * :return: une liste où les grosses formes apparaissent plusieurs fois
+     */
+    static construireSac(formes) {
+        const sac = [];
 
-// les grosses formes sortent plus souvent, là aussi comme dans le jeu original
-const GROSSES_FORMES = ["carre_3x3", "rect_2x3", "rect_3x2"];
-const POIDS_GROSSE_FORME = 5;
-
-// nombre d'essais avant d'abandonner la garantie d'un lot entièrement posable
-const MAX_ESSAIS_LOT = 40;
-
-/**
- * construit le sac dans lequel on tire les formes
- * chaque forme y est déposée une fois, les grosses POIDS_GROSSE_FORME fois : tirer au hasard dans ce sac revient à
- * donner plus de chances aux grosses formes, sans avoir à calculer quoi que ce soit au moment du tirage
- * :param formes: liste des noms de formes autorisées
- * :return: une liste où les grosses formes apparaissent plusieurs fois
- */
-function construireSacDeFormes(formes) {
-    const sac = [];
-
-    for (const forme of formes) {
-        const exemplaires = GROSSES_FORMES.includes(forme) ? POIDS_GROSSE_FORME : 1;
-        for (let i = 0; i < exemplaires; i++) {
-            sac.push(forme);
-        }
-    }
-    return sac;
-}
-
-/**
- * tire un élément au hasard dans une liste
- * :param liste: la liste dans laquelle piocher
- * :return: un de ses éléments
- */
-function tirerAuHasard(liste) {
-    return liste[Math.floor(Math.random() * liste.length)];
-}
-
-// numérotation des pièces : chaque pièce a besoin d'un identifiant unique pour que l'affichage sache laquelle est
-// glissée, et un simple compteur suffit
-let prochainNumeroDePiece = 1;
-
-/**
- * tire un lot de pièces au hasard, sans vérifier qu'elles sont posables
- * :param nombre: nombre de pièces à tirer
- * :param sac: sac de formes construit par construireSacDeFormes
- * :param nbCouleurs: nombre de couleurs disponibles
- * :param chanceTriple: probabilité que les pièces partagent toutes la même forme
- * :return: une liste d'objets {id, forme, couleur}
- */
-function creerPieces(nombre, sac, nbCouleurs, chanceTriple) {
-    // tirée une fois pour tout le lot : si elle n'est pas nulle, toutes les pièces prennent cette forme
-    let formeCommune = null;
-    if (Math.random() < chanceTriple) {
-        formeCommune = tirerAuHasard(sac);
-    }
-
-    const pieces = [];
-    for (let i = 0; i < nombre; i++) {
-        pieces.push({
-            id: `piece-${prochainNumeroDePiece}`,
-            forme: formeCommune !== null ? formeCommune : tirerAuHasard(sac),
-            couleur: Math.floor(Math.random() * nbCouleurs),
-        });
-        prochainNumeroDePiece++;
-    }
-    return pieces;
-}
-
-/**
- * vérifie s'il existe un ordre et des emplacements permettant de poser TOUTES ces formes à la suite
- *
- * méthode, dite recherche avec retour en arrière : on choisit une forme, on l'essaie à chaque endroit possible, et
- * pour chaque endroit qui marche on recommence avec les formes restantes sur la grille obtenue. La fonction s'appelle
- * donc elle-même avec un problème plus petit, une forme de moins, jusqu'à la liste vide qui est le cas gagnant.
- * Si aucun essai ne mène à la liste vide, c'est perdu.
- *
- * exemple avec deux formes A et B : on essaie A partout, et pour chaque position de A qui tient on regarde si B rentre
- * quelque part sur la grille où A est déjà posée. Si aucune position de A ne laisse de place à B, on repart de zéro en
- * essayant B en premier. D'où "dans un ordre" dans le nom de la fonction.
- *
- * :param grille: la grille de départ
- * :param formes: liste des noms de formes à poser
- * :return: true s'il existe une solution, sinon false
- */
-function peutToutPoserDansUnOrdre(grille, formes) {
-    // plus rien à poser : toutes les formes ont trouvé leur place
-    if (formes.length === 0) return true;
-
-    const dejaEssayees = [];
-
-    for (let index = 0; index < formes.length; index++) {
-        const forme = formes[index];
-
-        // deux pièces identiques mèneraient exactement au même essai
-        if (dejaEssayees.includes(forme)) continue;
-        dejaEssayees.push(forme);
-
-        // ce qu'il restera à poser si on pose celle-ci maintenant
-        const restantes = formes.slice();
-        restantes.splice(index, 1);
-
-        for (let ligne = 0; ligne < grille.taille; ligne++) {
-            for (let colonne = 0; colonne < grille.taille; colonne++) {
-                if (!grille.peutPoser(forme, ligne, colonne)) continue;
-
-                const grilleSuivante = grille.simulerPose(forme, ligne, colonne);
-                if (peutToutPoserDansUnOrdre(grilleSuivante, restantes)) return true;
+        for (const forme of formes) {
+            const exemplaires = Tirage.GROSSES_FORMES.includes(forme) ? Tirage.POIDS_GROSSE_FORME : 1;
+            for (let i = 0; i < exemplaires; i++) {
+                sac.push(forme);
             }
         }
+        return sac;
     }
 
-    // aucune forme, à aucun endroit, ne mène à une solution
-    return false;
-}
-
-/**
- * tire un lot de pièces posables toutes ensemble, dans un ordre ou dans un autre
- * une défaite vient donc d'un mauvais placement du joueur, jamais du tirage
- * en dernier recours on garde le dernier lot tiré, dont chaque pièce est au moins posable seule
- * :param etat: l'état du jeu, pour sa grille et son nombre de couleurs
- * :param nombre: nombre de pièces à tirer
- * :return: une liste d'objets {id, forme, couleur}
- */
-function tirerLotPosable(etat, nombre) {
-    const grille = etat.grille;
-
-    // formes qui rentrent encore quelque part, calculées une seule fois puisque la grille ne change pas entre
-    // deux essais
-    const posables = [];
-    for (const forme of Forme.noms()) {
-        if (grille.peutPoserQuelquePart(forme)) posables.push(forme);
+    /**
+     * tire un élément au hasard dans une liste
+     * :param liste: la liste dans laquelle piocher
+     * :return: un de ses éléments
+     */
+    static tirerAuHasard(liste) {
+        return liste[Math.floor(Math.random() * liste.length)];
     }
 
-    const sac = construireSacDeFormes(posables.length > 0 ? posables : Forme.noms());
-    const chanceTriple = grille.estVide() ? CHANCE_TRIPLE_GRILLE_VIDE : CHANCE_TRIPLE_EN_JEU;
-
-    let pieces;
-    for (let essai = 0; essai < MAX_ESSAIS_LOT; essai++) {
-        pieces = creerPieces(nombre, sac, etat.nbCouleurs, chanceTriple);
-
-        const formes = [];
-        for (const piece of pieces) {
-            formes.push(piece.forme);
+    /**
+     * tire un lot de pièces au hasard, sans vérifier qu'elles sont posables
+     * :param nombre: nombre de pièces à tirer
+     * :param sac: sac de formes construit par construireSac
+     * :param nbCouleurs: nombre de couleurs disponibles
+     * :param chanceTriple: probabilité que les pièces partagent toutes la même forme
+     * :return: une liste d'objets {id, forme, couleur}
+     */
+    static creerPieces(nombre, sac, nbCouleurs, chanceTriple) {
+        // tirée une fois pour tout le lot : si elle n'est pas nulle, toutes les pièces prennent cette forme
+        let formeCommune = null;
+        if (Math.random() < chanceTriple) {
+            formeCommune = Tirage.tirerAuHasard(sac);
         }
-        if (peutToutPoserDansUnOrdre(grille, formes)) return pieces;
+
+        const pieces = [];
+        for (let i = 0; i < nombre; i++) {
+            pieces.push({
+                id: `piece-${Tirage.prochainNumero}`,
+                forme: formeCommune !== null ? formeCommune : Tirage.tirerAuHasard(sac),
+                couleur: Math.floor(Math.random() * nbCouleurs),
+            });
+            Tirage.prochainNumero++;
+        }
+        return pieces;
     }
-    return pieces;
+
+    /**
+     * vérifie s'il existe un ordre et des emplacements permettant de poser TOUTES ces formes à la suite
+     *
+     * méthode, dite recherche avec retour en arrière : on choisit une forme, on l'essaie à chaque endroit possible, et
+     * pour chaque endroit qui marche on recommence avec les formes restantes sur la grille obtenue. La fonction
+     * s'appelle donc elle-même avec un problème plus petit, une forme de moins, jusqu'à la liste vide qui est le cas
+     * gagnant. Si aucun essai ne mène à la liste vide, c'est perdu.
+     *
+     * exemple avec deux formes A et B : on essaie A partout, et pour chaque position de A qui tient on regarde si B
+     * rentre quelque part sur la grille où A est déjà posée. Si aucune position de A ne laisse de place à B, on repart
+     * de zéro en essayant B en premier. D'où "dans un ordre" dans le nom de la fonction.
+     *
+     * :param grille: la grille de départ, qui n'est pas modifiée
+     * :param formes: liste des noms de formes à poser
+     * :return: true s'il existe une solution, sinon false
+     */
+    static peutToutPoserDansUnOrdre(grille, formes) {
+        // plus rien à poser : toutes les formes ont trouvé leur place
+        if (formes.length === 0) return true;
+
+        const dejaEssayees = [];
+
+        for (let index = 0; index < formes.length; index++) {
+            const forme = formes[index];
+
+            // deux pièces identiques mèneraient exactement au même essai
+            if (dejaEssayees.includes(forme)) continue;
+            dejaEssayees.push(forme);
+
+            // ce qu'il restera à poser si on pose celle-ci maintenant
+            const restantes = formes.slice();
+            restantes.splice(index, 1);
+
+            for (let ligne = 0; ligne < grille.taille; ligne++) {
+                for (let colonne = 0; colonne < grille.taille; colonne++) {
+                    if (!grille.peutPoser(forme, ligne, colonne)) continue;
+
+                    const grilleSuivante = grille.simulerPose(forme, ligne, colonne);
+                    if (Tirage.peutToutPoserDansUnOrdre(grilleSuivante, restantes)) return true;
+                }
+            }
+        }
+
+        // aucune forme, à aucun endroit, ne mène à une solution
+        return false;
+    }
+
+    /**
+     * tire un lot de pièces posables toutes ensemble, dans un ordre ou dans un autre
+     * une défaite vient donc d'un mauvais placement du joueur, jamais du tirage
+     * en dernier recours on garde le dernier lot tiré, dont chaque pièce est au moins posable seule
+     * :param grille: la grille sur laquelle les pièces devront rentrer
+     * :param nombre: nombre de pièces à tirer
+     * :param nbCouleurs: nombre de couleurs disponibles
+     * :return: une liste d'objets {id, forme, couleur}
+     */
+    static tirerLot(grille, nombre, nbCouleurs) {
+        // formes qui rentrent encore quelque part, calculées une seule fois puisque la grille ne change pas entre
+        // deux essais
+        const posables = [];
+        for (const forme of Forme.noms()) {
+            if (grille.peutPoserQuelquePart(forme)) posables.push(forme);
+        }
+
+        const sac = Tirage.construireSac(posables.length > 0 ? posables : Forme.noms());
+        const chanceTriple = grille.estVide() ? Tirage.CHANCE_TRIPLE_GRILLE_VIDE : Tirage.CHANCE_TRIPLE_EN_JEU;
+
+        let pieces;
+        for (let essai = 0; essai < Tirage.MAX_ESSAIS_LOT; essai++) {
+            pieces = Tirage.creerPieces(nombre, sac, nbCouleurs, chanceTriple);
+
+            const formes = [];
+            for (const piece of pieces) {
+                formes.push(piece.forme);
+            }
+            if (Tirage.peutToutPoserDansUnOrdre(grille, formes)) return pieces;
+        }
+        return pieces;
+    }
 }
+
+// un lot sur trois est composé de trois fois la même forme quand la grille est vide, contre 3 % en cours de partie
+// c'est le comportement du jeu original
+Tirage.CHANCE_TRIPLE_GRILLE_VIDE = 1 / 3;
+Tirage.CHANCE_TRIPLE_EN_JEU = 0.03;
+
+// les grosses formes sortent plus souvent, là aussi comme dans le jeu original
+Tirage.GROSSES_FORMES = ["carre_3x3", "rect_2x3", "rect_3x2"];
+Tirage.POIDS_GROSSE_FORME = 5;
+
+// nombre d'essais avant d'abandonner la garantie d'un lot entièrement posable
+Tirage.MAX_ESSAIS_LOT = 40;
+
+// numérotation des pièces : chaque pièce a besoin d'un identifiant unique pour que l'affichage sache laquelle est
+// glissée, et un simple compteur partagé par tout le jeu suffit
+Tirage.prochainNumero = 1;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // état de la partie
@@ -607,7 +610,7 @@ function creerEtatInitial(taille = 8, nbCouleurs = 4) {
         ligneCasseeDansLeLot: false,
         pieces: [],
     };
-    return etatAvec(etatVide, { pieces: tirerLotPosable(etatVide, PIECES_PAR_LOT) });
+    return etatAvec(etatVide, { pieces: Tirage.tirerLot(etatVide.grille, PIECES_PAR_LOT, etatVide.nbCouleurs) });
 }
 
 /**
@@ -691,7 +694,7 @@ function poserPiece(etat, idPiece, ligne, colonne) {
     return etatAvec(nettoye, {
         combo: nettoye.ligneCasseeDansLeLot ? nettoye.combo : 0,
         ligneCasseeDansLeLot: false,
-        pieces: tirerLotPosable(nettoye, PIECES_PAR_LOT),
+        pieces: Tirage.tirerLot(nettoye.grille, PIECES_PAR_LOT, nettoye.nbCouleurs),
     });
 }
 
@@ -728,8 +731,8 @@ function basculerCase(etat, ligne, colonne) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 if (typeof module !== "undefined") {
     module.exports = {
-        Forme, GROSSES_FORMES, PIECES_PAR_LOT,
-        Grille, peutToutPoserDansUnOrdre, construireSacDeFormes,
+        Forme, Tirage, PIECES_PAR_LOT,
+        Grille,
         Bareme, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
     };
 }

@@ -12,8 +12,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
-    Forme, GROSSES_FORMES, PIECES_PAR_LOT,
-    Grille, peutToutPoserDansUnOrdre, construireSacDeFormes,
+    Forme, Tirage, PIECES_PAR_LOT,
+    Grille,
     Bareme, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
 } = require("../game_logic.js");
 
@@ -73,7 +73,7 @@ test("aucune forme n'est définie deux fois", () => {
 });
 
 test("les grosses formes existent bien", () => {
-    for (const nom of GROSSES_FORMES) {
+    for (const nom of Tirage.GROSSES_FORMES) {
         assert.ok(Forme.parNom(nom), `forme inconnue : ${nom}`);
     }
 });
@@ -205,7 +205,7 @@ test("le barème suit la formule annoncée et reste borné", () => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 test("les grosses formes sortent plus souvent du sac", () => {
-    const sac = construireSacDeFormes(["bloc", "carre_3x3"]);
+    const sac = Tirage.construireSac(["bloc", "carre_3x3"]);
 
     let nbBloc = 0;
     let nbCarre = 0;
@@ -224,7 +224,7 @@ test("le lot tiré est toujours posable en entier", () => {
 
         assert.equal(etat.pieces.length, PIECES_PAR_LOT);
         assert.ok(
-            peutToutPoserDansUnOrdre(etat.grille, formes),
+            Tirage.peutToutPoserDansUnOrdre(etat.grille, formes),
             "le lot de départ devrait être entièrement posable"
         );
     }
