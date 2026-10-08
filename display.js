@@ -227,7 +227,7 @@ class VueGrille {
         if (!valide) return;
 
         // met en évidence les lignes et colonnes que cette pose ferait sauter
-        const cassees = grille.lignesCasseesPar(forme, ligne, colonne);
+        const cassees = grille.chercherLignesCasseesPar(forme, ligne, colonne);
         for (const element of this.listerCasesDesLignes(cassees)) {
             element.classList.add("apercu-suppression");
         }

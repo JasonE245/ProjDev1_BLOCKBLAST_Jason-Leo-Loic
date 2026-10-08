@@ -59,7 +59,7 @@ Un seul objet, `jeu.partie`, créé dans le constructeur de `Jeu` (`main.js` lig
 | 253 | `poserForme()` | Dessine une forme sur la grille |
 | 287 | `chercherLignesPleines()` | Les index des lignes et colonnes entièrement occupées |
 | 305 | `viderLignes()` | Vide les lignes et colonnes indiquées |
-| 328 | `lignesCasseesPar()` | Ce que cette pose ferait sauter, sans rien poser |
+| 328 | `chercherLignesCasseesPar()` | Ce que cette pose ferait sauter, sans rien poser |
 | 347 | `simulerPose()` | La grille après une pose, sur une copie |
 | 377 | **`class Bareme`** | Le calcul des points. Que des méthodes `static` |
 | 398 | `Bareme.calculerPoints()` | Les points d'une suppression |
@@ -133,7 +133,7 @@ GlisserDeposer.calculerOrigine()        position du curseur -> coin de la forme
         v
 Jeu.surPosePiece(id, ligne, colonne)    la fonction que le jeu a donnée au glisser-déposer
         |
-        +-- partie.grille.lignesCasseesPar()    AVANT la pose, pour l'animation
+        +-- partie.grille.chercherLignesCasseesPar()    AVANT la pose, pour l'animation
         |
         +-- partie.poserPiece()                 modifie la partie, renvoie false si impossible
         |        |

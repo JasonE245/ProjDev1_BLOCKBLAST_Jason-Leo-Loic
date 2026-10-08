@@ -325,7 +325,7 @@ class Grille {
      * :param colonne: colonne du coin haut-gauche
      * :return: un objet {lignes, colonnes}, vide si la pose est impossible
      */
-    lignesCasseesPar(forme, ligne, colonne) {
+    chercherLignesCasseesPar(forme, ligne, colonne) {
         if (!this.peutPoser(forme, ligne, colonne)) {
             return { lignes: [], colonnes: [] };
         }
@@ -380,7 +380,7 @@ class Bareme {
      * :param n: le nombre de départ
      * :return: le produit de tous les entiers de 1 à n
      */
-    static factorielle(n) {
+    static calculerFactorielle(n) {
         let resultat = 1;
 
         for (let i = 2; i <= n; i++) {
@@ -399,7 +399,7 @@ class Bareme {
         const lignes = Math.min(nbLignes, Bareme.MAX_LIGNES_COMPTEES);
         const multiplicateur = Math.min(combo + 1, Bareme.PLAFOND_COMBO_PAR_LIGNE * lignes);
 
-        return Bareme.POINTS_PAR_LIGNE * Bareme.factorielle(lignes) * multiplicateur;
+        return Bareme.POINTS_PAR_LIGNE * Bareme.calculerFactorielle(lignes) * multiplicateur;
     }
 }
 

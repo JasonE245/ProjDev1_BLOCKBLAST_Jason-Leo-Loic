@@ -135,7 +135,7 @@ class Jeu {
         if (piece === null) return;
 
         // calculé AVANT la pose : après, les lignes ont déjà sauté et il n'y aurait plus rien à faire clignoter
-        const cassees = this.partie.grille.lignesCasseesPar(piece.forme, ligne, colonne);
+        const cassees = this.partie.grille.chercherLignesCasseesPar(piece.forme, ligne, colonne);
 
         // pose impossible : rien n'a changé, il n'y a rien à redessiner
         if (!this.partie.poserPiece(idPiece, ligne, colonne)) return;

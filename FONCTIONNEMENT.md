@@ -75,7 +75,7 @@ besoin de savoir quelles lignes vont sauter, pour les faire clignoter. Il faut l
 calculer **avant** de poser la pièce :
 
 ```js
-const cassees = this.partie.grille.lignesCasseesPar(piece.forme, ligne, colonne);
+const cassees = this.partie.grille.chercherLignesCasseesPar(piece.forme, ligne, colonne);
 
 if (!this.partie.poserPiece(idPiece, ligne, colonne)) return;
 // ... mise à jour du record ...
@@ -87,7 +87,7 @@ this.vueGrille.animer(cassees);
 Après la pose, les lignes sont déjà vides et il n'y aurait plus rien à faire clignoter.
 
 Quand il faut essayer quelque chose sans rien changer, on travaille sur une copie :
-`lignesCasseesPar` et `simulerPose` commencent par `this.copier()`, puis font leur essai
+`chercherLignesCasseesPar` et `simulerPose` commencent par `this.copier()`, puis font leur essai
 sur la copie. La vraie grille n'est pas touchée.
 
 ## 3. Le tirage garanti posable

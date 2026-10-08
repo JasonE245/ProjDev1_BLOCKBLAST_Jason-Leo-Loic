@@ -125,11 +125,11 @@ test("une copie de grille est indépendante de l'originale", () => {
     assert.equal(grille.lireCase(2, 3), 0, "l'originale ne doit pas bouger");
 });
 
-test("lignesCasseesPar ne renvoie rien si la pose est impossible", () => {
+test("chercherLignesCasseesPar ne renvoie rien si la pose est impossible", () => {
     const grille = new Grille(8);
     grille.ecrireCase(0, 0, 1);
 
-    assert.deepEqual(grille.lignesCasseesPar("bloc", 0, 0), { lignes: [], colonnes: [] });
+    assert.deepEqual(grille.chercherLignesCasseesPar("bloc", 0, 0), { lignes: [], colonnes: [] });
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
