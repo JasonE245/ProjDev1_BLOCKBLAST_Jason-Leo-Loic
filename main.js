@@ -97,7 +97,7 @@ let record = Number(localStorage.getItem(CLE_RECORD)) || 0;
 function afficherTout() {
     afficherGrille(partie);
     vueScore.afficher(partie, record);
-    afficherReserve(partie);
+    vueReserve.afficher(partie);
     vueScore.afficherFin(partie);
 }
 
@@ -168,5 +168,6 @@ Themes.afficherChoix(surChoixTheme);
 initInteractionsGrille(surPosePiece);
 new ModeDebug(surBasculeCase);
 const vueScore = new VueScore(surRejouer);
+const vueReserve = new VueReserve();
 
 afficherTout();

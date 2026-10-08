@@ -414,80 +414,85 @@ ModeDebug.CODE = "debug";
 // réserve de pièces
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/**
- * fabrique l'élément d'une pièce de la réserve, prêt à être glissé
- * :param piece: un objet {id, forme, couleur}
- * :return: l'élément de la page
- */
-function creerElementPiece(piece) {
-    const forme = Forme.parNom(piece.forme);
-    const taille = forme.taille();
-    const cases = forme.cases;
+// l'affichage des pièces proposées au joueur, chacune prête à être glissée sur la grille
+class VueReserve {
+    constructor() {
+        this.conteneur = document.getElementById("reserve");
+    }
 
-    const element = document.createElement("div");
-    element.className = "piece";
-    element.draggable = true;
-    element.style.gridTemplateColumns = `repeat(${taille.colonnes}, var(--taille-case-piece))`;
-    element.style.gridTemplateRows = `repeat(${taille.lignes}, var(--taille-case-piece))`;
+    /**
+     * redessine la réserve des pièces proposées
+     * :param partie: la partie en cours
+     * :return: rien, la réserve est reconstruite
+     */
+    afficher(partie) {
+        this.conteneur.innerHTML = "";
 
-    // on dessine tout le rectangle qui contient la forme, case par case
-    for (let ligne = 0; ligne < taille.lignes; ligne++) {
-        for (let colonne = 0; colonne < taille.colonnes; colonne++) {
-            const petiteCase = document.createElement("div");
-            petiteCase.className = "case-piece";
+        for (const piece of partie.pieces) {
+            // chaque pièce est centrée dans un emplacement de taille fixe, pour que la réserve ne saute pas d'un lot
+            // à l'autre selon la taille des formes
+            const emplacement = document.createElement("div");
+            emplacement.className = "emplacement-piece";
+            emplacement.appendChild(this.creerElementPiece(piece));
 
-            // la forme ne remplit pas forcément tout son rectangle : on cherche si cette position en fait partie,
-            // et sinon la case reste transparente
-            let occupee = false;
-            for (const [l, c] of cases) {
-                if (l === ligne && c === colonne) occupee = true;
-            }
-            if (occupee) colorerCase(petiteCase, piece.couleur);
-
-            element.appendChild(petiteCase);
+            this.conteneur.appendChild(emplacement);
         }
     }
 
-    element.addEventListener("dragstart", (evenement) => {
-        idPieceGlissee = piece.id;
+    /**
+     * fabrique l'élément d'une pièce de la réserve, prêt à être glissé
+     * :param piece: un objet {id, forme, couleur}
+     * :return: l'élément de la page
+     */
+    creerElementPiece(piece) {
+        const forme = Forme.parNom(piece.forme);
+        const taille = forme.taille();
 
-        // Firefox refuse de démarrer un glisser si aucune donnée n'est associée à l'événement
-        evenement.dataTransfer.setData("text/plain", piece.id);
-        evenement.dataTransfer.effectAllowed = "move";
+        const element = document.createElement("div");
+        element.className = "piece";
+        element.draggable = true;
+        element.style.gridTemplateColumns = `repeat(${taille.colonnes}, var(--taille-case-piece))`;
+        element.style.gridTemplateRows = `repeat(${taille.lignes}, var(--taille-case-piece))`;
 
-        // l'image qui suit le curseur est accrochée par son milieu et non par son coin
-        const rectangle = element.getBoundingClientRect();
-        evenement.dataTransfer.setDragImage(element, rectangle.width / 2, rectangle.height / 2);
+        // on dessine tout le rectangle qui contient la forme, case par case
+        for (let ligne = 0; ligne < taille.lignes; ligne++) {
+            for (let colonne = 0; colonne < taille.colonnes; colonne++) {
+                const petiteCase = document.createElement("div");
+                petiteCase.className = "case-piece";
 
-        element.classList.add("en-glissement");
-    });
+                // la forme ne remplit pas forcément tout son rectangle : on cherche si cette position en fait partie,
+                // et sinon la case reste transparente
+                let occupee = false;
+                for (const [l, c] of forme.cases) {
+                    if (l === ligne && c === colonne) occupee = true;
+                }
+                if (occupee) colorerCase(petiteCase, piece.couleur);
 
-    element.addEventListener("dragend", () => {
-        idPieceGlissee = null;
-        element.classList.remove("en-glissement");
-        effacerApercu();
-    });
+                element.appendChild(petiteCase);
+            }
+        }
 
-    return element;
-}
+        element.addEventListener("dragstart", (evenement) => {
+            idPieceGlissee = piece.id;
 
-/**
- * redessine la réserve des trois pièces proposées
- * :param etat: l'état du jeu
- * :return: rien, la réserve est reconstruite
- */
-function afficherReserve(etat) {
-    const conteneur = document.getElementById("reserve");
-    conteneur.innerHTML = "";
+            // Firefox refuse de démarrer un glisser si aucune donnée n'est associée à l'événement
+            evenement.dataTransfer.setData("text/plain", piece.id);
+            evenement.dataTransfer.effectAllowed = "move";
 
-    for (const piece of etat.pieces) {
-        // chaque pièce est centrée dans un emplacement de taille fixe, pour que la réserve ne saute pas d'un lot
-        // à l'autre selon la taille des formes
-        const emplacement = document.createElement("div");
-        emplacement.className = "emplacement-piece";
-        emplacement.appendChild(creerElementPiece(piece));
+            // l'image qui suit le curseur est accrochée par son milieu et non par son coin
+            const rectangle = element.getBoundingClientRect();
+            evenement.dataTransfer.setDragImage(element, rectangle.width / 2, rectangle.height / 2);
 
-        conteneur.appendChild(emplacement);
+            element.classList.add("en-glissement");
+        });
+
+        element.addEventListener("dragend", () => {
+            idPieceGlissee = null;
+            element.classList.remove("en-glissement");
+            effacerApercu();
+        });
+
+        return element;
     }
 }
 
