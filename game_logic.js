@@ -1,14 +1,14 @@
 // programme: Block Blast section logique
 // par : Roux Loïc, Léo Del Duca, Jason Roger Marc Edmonds
 // créé le : 18.08.2026
-// Version: V.2.0
-// dernière modif: 10.09.2026
+// Version: V.3.0
+// dernière modif: 08.10.2026
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Ce fichier contient les règles du jeu. Aucune classe ici ne touche à l'affichage.
 //
 // Forme, Bareme et Tirage ne changent jamais. Grille et Partie, elles, se modifient au fil du jeu : leurs méthodes
-// changent l'objet lui-même. Règle à respecter : seul main.js appelle les méthodes qui modifient la partie,
-// l'affichage ne fait que la lire.
+// changent l'objet lui-même. Règle à respecter : seule la classe Jeu (main.js) appelle les méthodes qui modifient la
+// partie, l'affichage ne fait que la lire.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // une forme est une liste de cases en coordonnées [ligne, colonne] à partir du coin haut-gauche (0, 0)

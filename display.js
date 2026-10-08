@@ -1,11 +1,12 @@
 // programme: Block Blast section affichage
 // par : Roux Loïc, Léo Del Duca, Jason Roger Marc Edmonds
 // créé le : 18.08.2026
-// Version: V.2.0
-// dernière modif: 10.09.2026
+// Version: V.3.0
+// dernière modif: 08.10.2026
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Ce fichier contient tout ce qui touche à la page. Il lit l'état du jeu mais ne le modifie jamais : quand le joueur
-// fait quelque chose, il prévient la couche de contrôle (main.js) en appelant une fonction reçue en paramètre.
+// Ce fichier contient tout ce qui touche à la page. Ses classes lisent la partie mais ne la modifient jamais : quand
+// le joueur fait quelque chose, elles préviennent le jeu (la classe Jeu de main.js) en appelant la fonction qu'il
+// leur a donnée.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

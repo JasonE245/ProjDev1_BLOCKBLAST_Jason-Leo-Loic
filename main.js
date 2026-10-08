@@ -1,8 +1,8 @@
 // programme: Block Blast section principale
 // par : Roux Loïc, Léo Del Duca, Jason Roger Marc Edmonds
 // créé le : 18.08.2026
-// Version: V.2.0
-// dernière modif: 10.09.2026
+// Version: V.3.0
+// dernière modif: 08.10.2026
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 Ce fichier crée le jeu et relie la logique à l'affichage. La classe Jeu est la seule qui modifie la partie, et la
