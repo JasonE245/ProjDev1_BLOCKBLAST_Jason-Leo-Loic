@@ -1,71 +1,94 @@
 # Comment le code fonctionne
 
-L'en-tête de `main.js` donne la carte du projet : quelles fonctions existent et dans quel
-fichier. Ce document-ci explique les quatre points qui ne se devinent pas à la lecture,
-même quand on a la carte.
+L'en-tête de `main.js` donne la carte du projet : quelles classes existent et dans quel
+fichier. Ce document-ci explique ce qui ne se devine pas à la lecture, même quand on a la
+carte.
 
-## 1. Le cycle : action, nouvel état, réaffichage
+## 1. Les classes et qui parle à qui
 
-Tout le jeu tient dans une seule variable, `etat`, déclarée dans `main.js` :
+Le jeu compte douze classes, réparties dans trois fichiers :
+
+| Fichier | Classes | Rôle |
+| --- | --- | --- |
+| `game_logic.js` | `Forme`, `Grille`, `Bareme`, `Tirage`, `Partie` | Les règles. Ne touche jamais à la page. |
+| `display.js` | `Themes`, `VueGrille`, `GlisserDeposer`, `VueReserve`, `VueScore`, `ModeDebug` | Tout ce qui touche à la page. Ne modifie jamais la partie. |
+| `main.js` | `Jeu` | Crée tout le reste et relie la logique à l'affichage. |
+
+Ces classes ne se parlent pas n'importe comment. Il n'y a que quatre sortes de messages :
+
+```
+   le joueur
+       |
+       v
+ +----------------------------+  1. prévient   +-------+   2. modifie   +---------------------+
+ | display.js                 | -------------> |       | -------------> | game_logic.js       |
+ |   GlisserDeposer, ModeDebug|                |  Jeu  |                |   Partie            |
+ |   VueScore, Themes         |                |       |                |     qui utilise     |
+ |                            | <------------- |       |                |     Grille, Tirage, |
+ |   VueGrille, VueReserve,   |  3. redessine  +-------+                |     Bareme, Forme   |
+ |   VueScore                 |                                         |                     |
+ |                            | ------------------ 4. lisent ---------> |                     |
+ +----------------------------+                                         +---------------------+
+```
+
+1. **Les vues préviennent le jeu.** Quand le joueur lâche une pièce, `GlisserDeposer` ne
+   touche à rien : il appelle la fonction que `Jeu` lui a donnée en le créant, avec
+   « la pièce p a été lâchée en (2, 3) ».
+2. **Le jeu modifie la partie.** `Jeu` est la seule classe qui appelle les méthodes qui
+   changent la partie, comme `poserPiece` ou `basculerCase`.
+3. **Le jeu demande aux vues de redessiner.** Après chaque action, `afficherTout()`
+   redessine toute la page.
+4. **Les vues lisent la partie.** Pour se dessiner, `VueGrille` lit la grille, `VueScore`
+   lit le score. Elles ne la modifient jamais.
+
+Et `game_logic.js` ne connaît personne : ni la page, ni le jeu. C'est ce qui permet de
+lancer ses tests avec Node, sans navigateur.
+
+Une vue reçoit la fonction à appeler au moment où elle est créée :
 
 ```js
-{
-    taille: 8,              // côté de la grille
-    nbCouleurs: 4,          // nombre de couleurs de pièces
-    grille: [[0, 0, ...]],  // 0 = case vide, 1 à 4 = couleur de la pièce posée
-    score: 0,
-    combo: 0,
-    ligneCasseeDansLeLot: false,
-    pieces: [ { id, forme, couleur }, ... ]   // les 3 pièces de la réserve
-}
+const surPose = (idPiece, ligne, colonne) => this.surPosePiece(idPiece, ligne, colonne);
+this.glisserDeposer = new GlisserDeposer(this.vueGrille, surPose);
 ```
 
-Il n'y a jamais de modification directe de l'affichage. Le seul enchaînement possible est
-celui-ci, écrit en entier dans `surPosePiece` (`main.js`) :
+La fonction fléchée `=>` sert à garder `this` : sans elle, au moment où le joueur lâche la
+pièce, `this` ne désignerait plus le jeu.
 
-```
-le joueur lâche une pièce
-        |
-        v
-poserPiece(etat, ...)  ->  renvoie un NOUVEL état
-        |
-        v
-etat = ce nouvel état
-        |
-        v
-afficherTout()  ->  redessine la page à partir de etat
-```
+## 2. Une partie qui se modifie, et la règle qui va avec
 
-`afficherTout()` ne fait aucun calcul : il redessine la grille, le score, la réserve et
-l'écran de fin à partir de l'état, sans se demander ce qui a changé. C'est plus simple à
-suivre qu'un affichage qui essaierait de ne mettre à jour que les cases touchées, et à
-cette taille de grille c'est instantané.
-
-## 2. Pourquoi on ne modifie jamais l'état
-
-Dans `game_logic.js`, aucune fonction n'écrit dans l'objet qu'elle reçoit. Elle en renvoie
-une copie modifiée, fabriquée par `etatAvec` :
+`Partie` et `Grille` se modifient elles-mêmes. Quand on écrit :
 
 ```js
-return etatAvec(etat, { score: etat.score + points });
+this.partie.poserPiece(idPiece, ligne, colonne);
 ```
 
-Cette ligne veut dire : « recopie tous les champs de `etat`, puis remplace `score` par
-cette nouvelle valeur ». L'ancien état n'a pas bougé. C'est le seul endroit du programme
-qui utilise `...`, justement pour n'avoir à l'expliquer qu'une fois.
+c'est la partie elle-même qui change : sa grille, son score, son combo, sa réserve. La
+méthode renvoie `true` si la pièce a été posée, et `false` si la pose était impossible —
+dans ce cas, rien n'a bougé.
 
-L'intérêt est concret. Dans `surPosePiece`, on a besoin de savoir quelles lignes vont
-sauter **avant** de poser la pièce, pour pouvoir les faire clignoter ensuite :
+Puisque la partie change sur place, une règle protège le tout : **seul `Jeu` appelle les
+méthodes qui la modifient**. Si la partie se met un jour à changer de façon inattendue,
+il n'y a qu'un seul endroit où chercher.
+
+Conséquence à connaître : l'ordre des opérations compte. Dans `Jeu.surPosePiece`, on a
+besoin de savoir quelles lignes vont sauter, pour les faire clignoter. Il faut le
+calculer **avant** de poser la pièce :
 
 ```js
-const cassees = lignesCasseesPar(etat.grille, piece.forme, ligne, colonne);
-etat = poserPiece(etat, idPiece, ligne, colonne);
-afficherTout();
-animerLignesCassees(etat, cassees);
+const cassees = this.partie.grille.lignesCasseesPar(piece.forme, ligne, colonne);
+
+if (!this.partie.poserPiece(idPiece, ligne, colonne)) return;
+// ... mise à jour du record ...
+
+this.afficherTout();
+this.vueGrille.animer(cassees);
 ```
 
-Si `poserPiece` modifiait la grille sur place, la ligne serait déjà vidée au moment de
-l'animation et il n'y aurait plus rien à faire clignoter.
+Après la pose, les lignes sont déjà vides et il n'y aurait plus rien à faire clignoter.
+
+Quand il faut essayer quelque chose sans rien changer, on travaille sur une copie :
+`lignesCasseesPar` et `simulerPose` commencent par `this.copier()`, puis font leur essai
+sur la copie. La vraie grille n'est pas touchée.
 
 ## 3. Le tirage garanti posable
 
@@ -76,12 +99,13 @@ d'algorithmique.
 trois, dans un ordre ou dans un autre. Autrement dit, qu'une défaite vienne d'un mauvais
 placement du joueur et jamais d'un tirage impossible.
 
-**Ce qu'on fait :** `tirerLotPosable` tire un lot au hasard, vérifie qu'il est posable en
-entier, et si non retire. Jusqu'à 40 fois (`MAX_ESSAIS_LOT`), après quoi on garde le
-dernier lot — dont chaque pièce est au moins posable seule.
+**Ce qu'on fait :** `Tirage.tirerLot` tire un lot au hasard, vérifie qu'il est posable en
+entier, et si non retire. Jusqu'à 40 fois (`Tirage.MAX_ESSAIS_LOT`), après quoi on garde
+le dernier lot — dont chaque pièce est au moins posable seule.
 
-La vérification est faite par `peutToutPoserDansUnOrdre`. Elle fonctionne par **retour en
-arrière** : on essaie, et si ça ne mène nulle part on annule et on essaie autre chose.
+La vérification est faite par `Tirage.peutToutPoserDansUnOrdre`. Elle fonctionne par
+**retour en arrière** : on essaie, et si ça ne mène nulle part on annule et on essaie
+autre chose.
 
 Déroulé avec deux formes, A et B :
 
@@ -89,13 +113,13 @@ Déroulé avec deux formes, A et B :
 peutToutPoserDansUnOrdre(grille, [A, B])
 |
 +- essayer A en (0,0) ?  oui
-|     +- peutToutPoserDansUnOrdre(grille avec A en (0,0), [B])
+|     +- peutToutPoserDansUnOrdre(grille.simulerPose(A, 0, 0), [B])
 |           +- essayer B en (0,0) ? non, occupé par A
 |           +- essayer B en (0,1) ? non
 |           +- ... aucune position ne marche  ->  FAUX
 |
 +- essayer A en (0,1) ?  oui
-|     +- peutToutPoserDansUnOrdre(grille avec A en (0,1), [B])
+|     +- peutToutPoserDansUnOrdre(grille.simulerPose(A, 0, 1), [B])
 |           +- essayer B en (0,0) ? oui
 |                 +- peutToutPoserDansUnOrdre(..., [])  ->  liste vide  ->  VRAI
 |           ->  VRAI
@@ -111,14 +135,19 @@ Deux choses à retenir :
 - **L'ordre compte.** Si aucune position de A ne laisse de place à B, on repart en
   essayant B en premier. C'est ce que dit le nom de la fonction.
 
-Le coût pourrait être élevé, mais il est mesuré : environ 1,3 ms au 99e centile et 2 ms au
-pire sur une partie complète. La recherche s'arrête à la première solution trouvée, et
-deux pièces identiques ne sont essayées qu'une fois.
+`simulerPose` renvoie une copie de la grille telle qu'elle serait après la pose. C'est
+indispensable ici : la recherche essaie des centaines de positions, et aucune ne doit
+toucher à la vraie grille.
+
+Le coût pourrait être élevé, mais il est mesuré sur environ 1 700 coups : 2 millisecondes
+au 99e centile, moins de 10 au pire, alors qu'un écran se rafraîchit toutes les 16. La
+recherche s'arrête à la première solution trouvée, et deux pièces identiques ne sont
+essayées qu'une fois.
 
 ## 4. La règle du combo
 
 Le combo compte les **lots** consécutifs pendant lesquels au moins une ligne a sauté, et
-non les pièces. D'où le champ `ligneCasseeDansLeLot` :
+non les pièces. D'où le champ `ligneCasseeDansLeLot` de `Partie` :
 
 - `supprimerLignesPleines` fait monter le combo de 1 chaque fois qu'une ligne saute, et
   met `ligneCasseeDansLeLot` à `true` ;
@@ -129,7 +158,7 @@ non les pièces. D'où le champ `ligneCasseeDansLeLot` :
 Autrement dit, casser une ligne avec la première pièce d'un lot protège le combo même si
 les deux suivantes ne cassent rien.
 
-Le barème est dans `pointsDeSuppression` :
+Le barème est dans `Bareme.calculerPoints` :
 
 ```
 score = 30 x L! x min(combo + 1, 6 x L)
@@ -141,17 +170,38 @@ multiplicateur est plafonné pour que le combo ne s'emballe pas.
 
 ## 5. Le glisser-déposer
 
-Les écouteurs sont posés une seule fois sur `#grille`, pas sur les 64 cases, parce que
-`afficherGrille` recrée les cases à chaque affichage : des écouteurs posés dessus seraient
-perdus à chaque tour. Le navigateur fait remonter l'événement de la case jusqu'à la
-grille, et `evenement.target.closest(".case")` retrouve la case concernée.
+`GlisserDeposer` pose ses écouteurs une seule fois, sur `#grille`, et pas sur les 64
+cases : `VueGrille.afficher` recrée les cases à chaque affichage, et des écouteurs posés
+dessus seraient perdus à chaque tour. Le navigateur fait remonter l'événement de la case
+jusqu'à la grille, et `evenement.target.closest(".case")` retrouve la case concernée.
 
-Deux détails qui ne se devinent pas :
+Trois détails qui ne se devinent pas :
 
-- Sans `evenement.preventDefault()` dans `dragover`, le navigateur refuse le lâcher.
-- `origineDeLaPose` traduit la position du curseur en coin haut-gauche de la forme, pour
+- Sans `evenement.preventDefault()` pendant le survol, le navigateur refuse le lâcher.
+- `calculerOrigine` traduit la position du curseur en coin haut-gauche de la forme, pour
   que la pièce paraisse centrée sous le curseur plutôt qu'accrochée par son coin.
+- `GlisserDeposer` a besoin de savoir quelle pièce est glissée, alors que les écouteurs
+  ont été posés une fois pour toutes. C'est `VueReserve` qui le prévient avec
+  `commencer(idPiece)` quand le joueur attrape une pièce, et il retrouve la pièce dans
+  `vueGrille.partieAffichee`, la dernière partie dessinée.
 
-Comme les écouteurs sont posés une fois pour toutes mais que l'état change à chaque coup,
-`display.js` garde le dernier état affiché dans `etatAffiche`, mis à jour par
-`afficherGrille`. C'est la seule variable partagée du fichier.
+## 6. Classes sans état, et constantes posées après la classe
+
+`Bareme`, `Tirage` et `Themes` n'ont que des méthodes `static` : on n'en crée jamais avec
+`new`, on écrit directement `Bareme.calculerPoints(...)`. Ce sont des classes qui servent
+à **ranger** ensemble un calcul et les constantes dont il a besoin, au lieu de les laisser
+traîner en variables globales.
+
+Les constantes sont toujours écrites **après** la classe :
+
+```js
+class Bareme {
+    ...
+}
+
+Bareme.POINTS_PAR_LIGNE = 30;
+```
+
+et jamais à l'intérieur avec `static POINTS_PAR_LIGNE = 30;`. Cette deuxième syntaxe est
+plus récente et n'est pas comprise par tous les navigateurs : c'est elle qui avait rendu
+la page blanche sous Firefox lors de la PR #7.
