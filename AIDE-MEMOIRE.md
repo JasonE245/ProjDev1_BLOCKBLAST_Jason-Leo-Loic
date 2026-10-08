@@ -14,7 +14,7 @@ Les numéros de ligne correspondent à la branche `feature/classes`.
 | Fichier | Lignes | Classes | Rôle en une phrase |
 | --- | --- | --- | --- |
 | `game_logic.js` | 706 | 5 | Les règles. Ne touche jamais à la page. |
-| `display.js` | 576 | 6 | Tout ce qui écrit dans la page. Lit la partie, ne la modifie jamais. |
+| `display.js` | 592 | 6 | Tout ce qui écrit dans la page. Lit la partie, ne la modifie jamais. |
 | `main.js` | 196 | 1 | La classe `Jeu`, qui relie les deux autres. Le seul à modifier la partie. |
 | `index.html` | 54 | | La structure seule. Tous les conteneurs sont vides au départ. |
 | `style.css` | 302 | | La mise en forme. Les couleurs sont des variables posées par le thème. |
@@ -85,22 +85,22 @@ Un seul objet, `jeu.partie`, créé dans le constructeur de `Jeu` (`main.js` lig
 | 24 | `Themes.appliquer()` | Pose les couleurs comme variables CSS |
 | 55 | `Themes.afficherChoix()` | Remplit le panneau de choix et branche son bouton |
 | 76 | `Themes.LISTE` | Les 4 palettes. Leur longueur décide du nombre de couleurs du jeu |
-| 103 | **`class VueGrille`** | Le dessin de la grille |
-| 167 | `afficher()` | Reconstruit les 64 cases et retient la partie dessinée |
-| 211 | `afficherApercu()` | Montre où la pièce tomberait et ce que ça casserait |
-| 242 | `animerLignesCassees()` | Fait clignoter les lignes qui viennent de sauter |
-| 255 | `VueGrille.TAILLE_CASE` | 40 pixels, transmis au CSS par `--taille-case` |
-| 265 | **`class GlisserDeposer`** | Le glisser-déposer. Écouteurs posés **une seule fois** sur la grille |
-| 287 | `commencerGlisser()` | Appelée par la réserve quand le joueur attrape une pièce |
-| 308 | `calculerOrigine()` | Traduit la position du curseur en coin haut-gauche de la forme |
-| 344 | `gererSurvol()` | Montre l'aperçu pendant que la pièce survole la grille |
-| 361 | `gererLacher()` | Prévient le jeu quand la pièce est lâchée |
-| 379 | **`class ModeDebug`** | Taper « debug », puis cliquer les cases pour les remplir ou les vider |
-| 436 | `ModeDebug.CODE` | Le mot à taper |
-| 443 | **`class VueReserve`** | Le dessin des pièces proposées |
-| 476 | `creerElementPiece()` | Fabrique une pièce glissable |
-| 532 | **`class VueScore`** | Score, record, combo, et écran de fin avec son bouton Rejouer |
-| 568 | `afficherFinDePartie()` | Montre ou cache l'écran de fin |
+| 119 | **`class VueGrille`** | Le dessin de la grille |
+| 183 | `afficher()` | Reconstruit les 64 cases et retient la partie dessinée |
+| 227 | `afficherApercu()` | Montre où la pièce tomberait et ce que ça casserait |
+| 258 | `animerLignesCassees()` | Fait clignoter les lignes qui viennent de sauter |
+| 271 | `VueGrille.TAILLE_CASE` | 40 pixels, transmis au CSS par `--taille-case` |
+| 281 | **`class GlisserDeposer`** | Le glisser-déposer. Écouteurs posés **une seule fois** sur la grille |
+| 303 | `commencerGlisser()` | Appelée par la réserve quand le joueur attrape une pièce |
+| 324 | `calculerOrigine()` | Traduit la position du curseur en coin haut-gauche de la forme |
+| 360 | `gererSurvol()` | Montre l'aperçu pendant que la pièce survole la grille |
+| 377 | `gererLacher()` | Prévient le jeu quand la pièce est lâchée |
+| 395 | **`class ModeDebug`** | Taper « debug », puis cliquer les cases pour les remplir ou les vider |
+| 452 | `ModeDebug.CODE` | Le mot à taper |
+| 459 | **`class VueReserve`** | Le dessin des pièces proposées |
+| 492 | `creerElementPiece()` | Fabrique une pièce glissable |
+| 548 | **`class VueScore`** | Score, record, combo, et écran de fin avec son bouton Rejouer |
+| 584 | `afficherFinDePartie()` | Montre ou cache l'écran de fin |
 
 ## Où est quoi — `main.js`
 
@@ -155,10 +155,10 @@ Jeu.gererPosePiece(id, ligne, colonne)    la fonction que le jeu a donnée au gl
 | Changer le barème de points | `game_logic.js` | `Bareme.POINTS_PAR_LIGNE` et suivantes, ligne 408 |
 | Changer la taille de la grille | `main.js` | `Jeu.TAILLE_GRILLE`, ligne 185 |
 | Ajouter un thème ou une couleur | `display.js` | `Themes.LISTE`, ligne 76 — rien d'autre à toucher |
-| Changer la taille des cases | `display.js` | `VueGrille.TAILLE_CASE`, ligne 255 |
+| Changer la taille des cases | `display.js` | `VueGrille.TAILLE_CASE`, ligne 271 |
 | Changer la fréquence des grosses formes | `game_logic.js` | `Tirage.POIDS_GROSSE_FORME`, ligne 565 |
 | Changer l'animation de suppression | `style.css` | `@keyframes eclair-suppression` |
-| Changer le mot du mode debug | `display.js` | `ModeDebug.CODE`, ligne 436 |
+| Changer le mot du mode debug | `display.js` | `ModeDebug.CODE`, ligne 452 |
 | Réagir à une nouvelle action du joueur | `main.js` et `display.js` | Une méthode `gerer...` dans `Jeu`, passée à la vue concernée dans le constructeur |
 | Ajouter un test | `test/game_logic.test.js` | puis `npm test` |
 
@@ -307,7 +307,7 @@ c'est d'ouvrir le jeu avant de fusionner.
 | Barème | 30 × L! × min(combo + 1, 6 × L) |
 | Tests | 20, tous sur la logique |
 | Temps d'un coup | 2 ms au 99e centile |
-| Lignes de JavaScript | 1478, commentaires compris |
+| Lignes de JavaScript | 1494, commentaires compris |
 
 ## Ce qu'on assume comme limites
 

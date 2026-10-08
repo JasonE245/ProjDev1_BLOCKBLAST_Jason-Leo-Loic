@@ -22,16 +22,16 @@ class Themes {
      * :return: rien, la page change de couleurs
      */
     static appliquer(theme) {
-        const racine = document.documentElement.style;
+        const stylePage = document.documentElement.style;
 
-        racine.setProperty("--couleur-fond", theme.fond);
-        racine.setProperty("--fond-grille", theme.grille);
-        racine.setProperty("--couleur-case", theme.case);
-        racine.setProperty("--couleur-pleine", theme.pleine);
+        stylePage.setProperty("--couleur-fond", theme.couleurFond);
+        stylePage.setProperty("--fond-grille", theme.couleurGrille);
+        stylePage.setProperty("--couleur-case", theme.couleurCase);
+        stylePage.setProperty("--couleur-pleine", theme.couleurPleine);
 
         // une variable par nuance de pièce => --couleur-piece-0, --couleur-piece-1, etc.
-        for (let index = 0; index < theme.pieces.length; index++) {
-            racine.setProperty(`--couleur-piece-${index}`, theme.pieces[index]);
+        for (let index = 0; index < theme.couleursPieces.length; index++) {
+            stylePage.setProperty(`--couleur-piece-${index}`, theme.couleursPieces[index]);
         }
     }
 
@@ -58,7 +58,7 @@ class Themes {
         for (const theme of Themes.LISTE) {
             const pastille = document.createElement("button");
             pastille.className = "pastille-theme";
-            pastille.style.background = theme.pleine;
+            pastille.style.background = theme.couleurPleine;
             pastille.title = theme.nom;
             pastille.addEventListener("click", () => gererChoix(theme));
             panneau.appendChild(pastille);
@@ -75,25 +75,41 @@ class Themes {
 // suffit, le reste du programme suit tout seul
 Themes.LISTE = [
     {
-        nom: "mauve", fond: "#1e1e2e", grille: "#313244", case: "#45475a", pleine: "#89b4fa",
-        pieces: ["#89b4fa", "#74c7ec", "#94e2d5", "#b4befe"],
+        nom: "mauve",
+        couleurFond: "#1e1e2e",
+        couleurGrille: "#313244",
+        couleurCase: "#45475a",
+        couleurPleine: "#89b4fa",
+        couleursPieces: ["#89b4fa", "#74c7ec", "#94e2d5", "#b4befe"],
     },
     {
-        nom: "rose", fond: "#2a1e2e", grille: "#3d2a3f", case: "#5a4550", pleine: "#f5a1c9",
-        pieces: ["#f5a1c9", "#f2a9e0", "#eba0e0", "#f5c2e7"],
+        nom: "rose",
+        couleurFond: "#2a1e2e",
+        couleurGrille: "#3d2a3f",
+        couleurCase: "#5a4550",
+        couleurPleine: "#f5a1c9",
+        couleursPieces: ["#f5a1c9", "#f2a9e0", "#eba0e0", "#f5c2e7"],
     },
     {
-        nom: "forêt", fond: "#1a2418", grille: "#2b3a28", case: "#40523c", pleine: "#8fd97f",
-        pieces: ["#8fd97f", "#a6e3a1", "#94e2a1", "#b8e994"],
+        nom: "forêt",
+        couleurFond: "#1a2418",
+        couleurGrille: "#2b3a28",
+        couleurCase: "#40523c",
+        couleurPleine: "#8fd97f",
+        couleursPieces: ["#8fd97f", "#a6e3a1", "#94e2a1", "#b8e994"],
     },
     {
-        nom: "ambre", fond: "#2a2016", grille: "#3f3122", case: "#5c4a32", pleine: "#f5b942",
-        pieces: ["#f5b942", "#f9c74f", "#f8961e", "#f3a83c"],
+        nom: "ambre",
+        couleurFond: "#2a2016",
+        couleurGrille: "#3f3122",
+        couleurCase: "#5c4a32",
+        couleurPleine: "#f5b942",
+        couleursPieces: ["#f5b942", "#f9c74f", "#f8961e", "#f3a83c"],
     },
 ];
 
 // nombre de couleurs de pièces, déduit du premier thème
-Themes.NB_COULEURS = Themes.LISTE[0].pieces.length;
+Themes.NB_COULEURS = Themes.LISTE[0].couleursPieces.length;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // grille
