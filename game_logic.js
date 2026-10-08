@@ -345,7 +345,7 @@ class Grille {
      * :param colonne: colonne du coin haut-gauche
      * :return: une nouvelle Grille
      */
-    simulerPose(forme, ligne, colonne) {
+    calculerGrilleApresPose(forme, ligne, colonne) {
         const essai = this.copier();
         essai.poserForme(forme, ligne, colonne, 1);
         essai.viderLignes(essai.chercherLignesPleines());
@@ -512,7 +512,7 @@ class Tirage {
                 for (let colonne = 0; colonne < grille.taille; colonne++) {
                     if (!grille.peutPoser(forme, ligne, colonne)) continue;
 
-                    const grilleSuivante = grille.simulerPose(forme, ligne, colonne);
+                    const grilleSuivante = grille.calculerGrilleApresPose(forme, ligne, colonne);
                     if (Tirage.peutToutPoserDansUnOrdre(grilleSuivante, restantes)) return true;
                 }
             }

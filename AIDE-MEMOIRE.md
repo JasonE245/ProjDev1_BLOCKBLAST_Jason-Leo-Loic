@@ -60,7 +60,7 @@ Un seul objet, `jeu.partie`, créé dans le constructeur de `Jeu` (`main.js` lig
 | 288 | `chercherLignesPleines()` | Les index des lignes et colonnes entièrement occupées |
 | 306 | `viderLignes()` | Vide les lignes et colonnes indiquées |
 | 329 | `chercherLignesCasseesPar()` | Ce que cette pose ferait sauter, sans rien poser |
-| 348 | `simulerPose()` | La grille après une pose, sur une copie |
+| 348 | `calculerGrilleApresPose()` | La grille après une pose, sur une copie |
 | 378 | **`class Bareme`** | Le calcul des points. Que des méthodes `static` |
 | 399 | `Bareme.calculerPoints()` | Les points d'une suppression |
 | 409 | `Bareme.POINTS_PAR_LIGNE` | Les constantes du barème |

@@ -87,8 +87,8 @@ this.vueGrille.animerLignesCassees(cassees);
 Après la pose, les lignes sont déjà vides et il n'y aurait plus rien à faire clignoter.
 
 Quand il faut essayer quelque chose sans rien changer, on travaille sur une copie :
-`chercherLignesCasseesPar` et `simulerPose` commencent par `this.copier()`, puis font leur essai
-sur la copie. La vraie grille n'est pas touchée.
+`chercherLignesCasseesPar` et `calculerGrilleApresPose` commencent par `this.copier()`, puis
+font leur essai sur la copie. La vraie grille n'est pas touchée.
 
 ## 3. Le tirage garanti posable
 
@@ -113,13 +113,13 @@ Déroulé avec deux formes, A et B :
 peutToutPoserDansUnOrdre(grille, [A, B])
 |
 +- essayer A en (0,0) ?  oui
-|     +- peutToutPoserDansUnOrdre(grille.simulerPose(A, 0, 0), [B])
+|     +- peutToutPoserDansUnOrdre(grille.calculerGrilleApresPose(A, 0, 0), [B])
 |           +- essayer B en (0,0) ? non, occupé par A
 |           +- essayer B en (0,1) ? non
 |           +- ... aucune position ne marche  ->  FAUX
 |
 +- essayer A en (0,1) ?  oui
-|     +- peutToutPoserDansUnOrdre(grille.simulerPose(A, 0, 1), [B])
+|     +- peutToutPoserDansUnOrdre(grille.calculerGrilleApresPose(A, 0, 1), [B])
 |           +- essayer B en (0,0) ? oui
 |                 +- peutToutPoserDansUnOrdre(..., [])  ->  liste vide  ->  VRAI
 |           ->  VRAI
@@ -135,9 +135,9 @@ Deux choses à retenir :
 - **L'ordre compte.** Si aucune position de A ne laisse de place à B, on repart en
   essayant B en premier. C'est ce que dit le nom de la fonction.
 
-`simulerPose` renvoie une copie de la grille telle qu'elle serait après la pose. C'est
-indispensable ici : la recherche essaie des centaines de positions, et aucune ne doit
-toucher à la vraie grille.
+`calculerGrilleApresPose` renvoie une copie de la grille telle qu'elle serait après la
+pose. C'est indispensable ici : la recherche essaie des centaines de positions, et aucune
+ne doit toucher à la vraie grille.
 
 Le coût pourrait être élevé, mais il est mesuré sur environ 1 700 coups : 2 millisecondes
 au 99e centile, moins de 10 au pire, alors qu'un écran se rafraîchit toutes les 16. La
