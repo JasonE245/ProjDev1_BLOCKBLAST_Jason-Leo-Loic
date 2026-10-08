@@ -98,158 +98,160 @@ Themes.NB_COULEURS = Themes.LISTE[0].pieces.length;
 // grille
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// taille d'une case en pixels, transmise au CSS par la variable --taille-case
-const TAILLE_CASE = 40;
+// l'affichage de la grille : les cases, l'aperçu pendant le glisser-déposer et l'animation des lignes qui sautent
+class VueGrille {
+    constructor() {
+        this.conteneur = document.getElementById("grille");
+        this.conteneur.style.setProperty("--taille-case", `${VueGrille.TAILLE_CASE}px`);
 
-// dernier état affiché. Les écouteurs de la grille sont posés une seule fois alors que les cases sont recréées à
-// chaque affichage : ils viennent lire l'état courant ici.
-let etatAffiche = null;
-
-/**
- * retrouve l'élément d'une case de la grille à partir de ses coordonnées
- * :param ligne: ligne cherchée
- * :param colonne: colonne cherchée
- * :return: l'élément de la page, ou null si ces coordonnées sortent de la grille
- */
-function caseGrille(ligne, colonne) {
-    return document.querySelector(`#grille .case[data-ligne="${ligne}"][data-colonne="${colonne}"]`);
-}
-
-/**
- * rassemble les éléments de toutes les cases des lignes et colonnes indiquées
- * on utilise un Set et non une liste, sinon une case au croisement d'une ligne pleine et d'une colonne pleine serait
- * comptée deux fois
- * :param taille: côté de la grille
- * :param pleines: objet {lignes, colonnes} contenant les index concernés
- * :return: un Set d'éléments de la page
- */
-function casesDesLignes(taille, pleines) {
-    const cases = new Set();
-
-    for (const ligne of pleines.lignes) {
-        for (let colonne = 0; colonne < taille; colonne++) {
-            cases.add(caseGrille(ligne, colonne));
-        }
+        // dernière partie dessinée. Le glisser-déposer vient la lire pour savoir quelle pièce est glissée, et
+        // l'aperçu pour savoir où elle rentre.
+        this.partieAffichee = null;
     }
-    for (const colonne of pleines.colonnes) {
+
+    /**
+     * colore une case avec une des nuances du thème
+     * on passe par la variable --remplissage-case et non par une classe : le CSS n'a ainsi pas besoin de connaître le
+     * nombre de couleurs, et les classes d'aperçu restent prioritaires sur la couleur de la pièce
+     * la méthode est statique parce qu'elle sert aussi aux petites cases des pièces de la réserve
+     * :param element: l'élément de la case
+     * :param couleur: index de la nuance, de 0 à Themes.NB_COULEURS - 1
+     * :return: rien, la case change de couleur
+     */
+    static colorerCase(element, couleur) {
+        element.style.setProperty("--remplissage-case", `var(--couleur-piece-${couleur})`);
+    }
+
+    /**
+     * retrouve l'élément d'une case de la grille à partir de ses coordonnées
+     * :param ligne: ligne cherchée
+     * :param colonne: colonne cherchée
+     * :return: l'élément de la page, ou null si ces coordonnées sortent de la grille
+     */
+    trouverCase(ligne, colonne) {
+        return this.conteneur.querySelector(`.case[data-ligne="${ligne}"][data-colonne="${colonne}"]`);
+    }
+
+    /**
+     * rassemble les éléments de toutes les cases des lignes et colonnes indiquées
+     * on utilise un Set et non une liste, sinon une case au croisement d'une ligne pleine et d'une colonne pleine
+     * serait comptée deux fois
+     * :param pleines: objet {lignes, colonnes} contenant les index concernés
+     * :return: un Set d'éléments de la page
+     */
+    listerCasesDesLignes(pleines) {
+        const taille = this.partieAffichee.grille.taille;
+        const cases = new Set();
+
+        for (const ligne of pleines.lignes) {
+            for (let colonne = 0; colonne < taille; colonne++) {
+                cases.add(this.trouverCase(ligne, colonne));
+            }
+        }
+        for (const colonne of pleines.colonnes) {
+            for (let ligne = 0; ligne < taille; ligne++) {
+                cases.add(this.trouverCase(ligne, colonne));
+            }
+        }
+        // trouverCase renvoie null pour des coordonnées hors grille, on retire cette valeur
+        cases.delete(null);
+        return cases;
+    }
+
+    /**
+     * redessine entièrement la grille à partir de la partie
+     * :param partie: la partie en cours
+     * :return: rien, la grille est reconstruite
+     */
+    afficher(partie) {
+        this.partieAffichee = partie;
+        const taille = partie.grille.taille;
+
+        this.conteneur.style.gridTemplateColumns = `repeat(${taille}, var(--taille-case))`;
+        this.conteneur.style.gridTemplateRows = `repeat(${taille}, var(--taille-case))`;
+
+        // on repart d'une grille vide plutôt que de modifier les cases existantes
+        this.conteneur.innerHTML = "";
+
         for (let ligne = 0; ligne < taille; ligne++) {
-            cases.add(caseGrille(ligne, colonne));
-        }
-    }
-    // caseGrille renvoie null pour des coordonnées hors grille, on retire cette valeur
-    cases.delete(null);
-    return cases;
-}
+            for (let colonne = 0; colonne < taille; colonne++) {
+                const element = document.createElement("div");
+                element.className = "case";
+                // les coordonnées sont stockées sur la case pour être relues au moment du clic ou du lâcher
+                element.dataset.ligne = ligne;
+                element.dataset.colonne = colonne;
 
-/**
- * colore une case avec une des nuances du thème
- * on passe par la variable --remplissage-case et non par une classe : le CSS n'a ainsi pas besoin de connaître le
- * nombre de couleurs, et les classes d'aperçu restent prioritaires sur la couleur de la pièce
- * :param element: l'élément de la case
- * :param couleur: index de la nuance, de 0 à Themes.NB_COULEURS - 1
- * :return: rien, la case change de couleur
- */
-function colorerCase(element, couleur) {
-    element.style.setProperty("--remplissage-case", `var(--couleur-piece-${couleur})`);
-}
+                // 0 = case vide, 1 à 4 = couleur de la pièce posée, d'où le -1
+                const valeur = partie.grille.lireCase(ligne, colonne);
+                if (valeur !== 0) VueGrille.colorerCase(element, valeur - 1);
 
-/**
- * redessine entièrement la grille à partir de l'état
- * :param etat: l'état du jeu
- * :return: rien, la grille est reconstruite
- */
-function afficherGrille(etat) {
-    // les écouteurs posés sur la grille viendront lire cet état
-    etatAffiche = etat;
-
-    const conteneur = document.getElementById("grille");
-    conteneur.style.setProperty("--taille-case", `${TAILLE_CASE}px`);
-    conteneur.style.gridTemplateColumns = `repeat(${etat.grille.taille}, var(--taille-case))`;
-    conteneur.style.gridTemplateRows = `repeat(${etat.grille.taille}, var(--taille-case))`;
-
-    // on repart d'une grille vide plutôt que de modifier les cases existantes
-    conteneur.innerHTML = "";
-
-    for (let ligne = 0; ligne < etat.grille.taille; ligne++) {
-        for (let colonne = 0; colonne < etat.grille.taille; colonne++) {
-            const element = document.createElement("div");
-            element.className = "case";
-            // les coordonnées sont stockées sur la case pour être relues au moment du clic ou du lâcher
-            element.dataset.ligne = ligne;
-            element.dataset.colonne = colonne;
-
-            // 0 = case vide, 1 à 4 = couleur de la pièce posée, d'où le -1
-            const valeur = etat.grille.lireCase(ligne, colonne);
-            if (valeur !== 0) colorerCase(element, valeur - 1);
-
-            conteneur.appendChild(element);
-        }
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// aperçu de placement et animation
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * enlève toutes les marques d'aperçu de la grille
- * :return: rien, la grille reprend son apparence normale
- */
-function effacerApercu() {
-    for (const element of document.querySelectorAll("#grille .case")) {
-        element.classList.remove("apercu-valide", "apercu-invalide", "apercu-suppression");
-    }
-}
-
-/**
- * montre où la pièce se poserait, et ce que cette pose casserait
- * :param etat: l'état du jeu
- * :param forme: nom de la forme survolée
- * :param ligne: ligne du coin haut-gauche envisagé
- * :param colonne: colonne du coin haut-gauche envisagé
- * :return: rien, la grille est marquée
- */
-function afficherApercu(etat, forme, ligne, colonne) {
-    effacerApercu();
-
-    const valide = etat.grille.peutPoser(forme, ligne, colonne);
-
-    for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
-        // une forme survolée près d'un bord déborde de la grille : caseGrille ne trouve alors aucune case, et il n'y
-        // a rien à marquer pour cette partie de la forme
-        const element = caseGrille(l, c);
-        if (element !== null) {
-            element.classList.add(valide ? "apercu-valide" : "apercu-invalide");
+                this.conteneur.appendChild(element);
+            }
         }
     }
 
-    // rien de plus à montrer si la pose est impossible
-    if (!valide) return;
+    /**
+     * enlève toutes les marques d'aperçu de la grille
+     * :return: rien, la grille reprend son apparence normale
+     */
+    effacerApercu() {
+        for (const element of this.conteneur.querySelectorAll(".case")) {
+            element.classList.remove("apercu-valide", "apercu-invalide", "apercu-suppression");
+        }
+    }
 
-    // met en évidence les lignes et colonnes que cette pose ferait sauter
-    const cassees = etat.grille.lignesCasseesPar(forme, ligne, colonne);
-    for (const element of casesDesLignes(etat.grille.taille, cassees)) {
-        element.classList.add("apercu-suppression");
+    /**
+     * montre où la pièce se poserait, et ce que cette pose casserait
+     * :param forme: nom de la forme survolée
+     * :param ligne: ligne du coin haut-gauche envisagé
+     * :param colonne: colonne du coin haut-gauche envisagé
+     * :return: rien, la grille est marquée
+     */
+    afficherApercu(forme, ligne, colonne) {
+        this.effacerApercu();
+
+        const grille = this.partieAffichee.grille;
+        const valide = grille.peutPoser(forme, ligne, colonne);
+
+        for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
+            // une forme survolée près d'un bord déborde de la grille : trouverCase ne trouve alors aucune case, et il
+            // n'y a rien à marquer pour cette partie de la forme
+            const element = this.trouverCase(l, c);
+            if (element !== null) {
+                element.classList.add(valide ? "apercu-valide" : "apercu-invalide");
+            }
+        }
+
+        // rien de plus à montrer si la pose est impossible
+        if (!valide) return;
+
+        // met en évidence les lignes et colonnes que cette pose ferait sauter
+        const cassees = grille.lignesCasseesPar(forme, ligne, colonne);
+        for (const element of this.listerCasesDesLignes(cassees)) {
+            element.classList.add("apercu-suppression");
+        }
+    }
+
+    /**
+     * fait clignoter les lignes qui viennent de sauter
+     * elles sont calculées AVANT la pose par main.js : après, elles sont déjà vides et il n'y aurait plus rien à animer
+     * :param cassees: objet {lignes, colonnes} calculé avant la pose
+     * :return: rien, l'animation se lance
+     */
+    animer(cassees) {
+        for (const element of this.listerCasesDesLignes(cassees)) {
+            element.classList.add("vient-de-sauter");
+
+            // la durée est celle définie dans le CSS : il n'y a donc pas de valeur à garder synchronisée des deux côtés
+            element.addEventListener("animationend", () => {
+                element.classList.remove("vient-de-sauter");
+            }, { once: true });
+        }
     }
 }
 
-/**
- * fait clignoter les lignes qui viennent de sauter
- * elles sont calculées AVANT la pose par main.js : après, elles sont déjà vides et il n'y aurait plus rien à animer
- * :param etat: l'état du jeu après la pose
- * :param cassees: objet {lignes, colonnes} calculé avant la pose
- * :return: rien, l'animation se lance
- */
-function animerLignesCassees(etat, cassees) {
-    for (const element of casesDesLignes(etat.grille.taille, cassees)) {
-        element.classList.add("vient-de-sauter");
-
-        // la durée est celle définie dans le CSS : il n'y a donc pas de valeur à garder synchronisée des deux côtés
-        element.addEventListener("animationend", () => {
-            element.classList.remove("vient-de-sauter");
-        }, { once: true });
-    }
-}
+// taille d'une case en pixels, transmise au CSS par la variable --taille-case
+VueGrille.TAILLE_CASE = 40;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // glisser-déposer
@@ -262,17 +264,18 @@ function animerLignesCassees(etat, cassees) {
 class GlisserDeposer {
     /**
      * branche les écouteurs sur la grille
+     * :param vueGrille: la VueGrille, qui connaît la partie affichée et sait dessiner l'aperçu
      * :param surPose: fonction appelée avec (idPiece, ligne, colonne) quand le joueur lâche une pièce
      */
-    constructor(surPose) {
+    constructor(vueGrille, surPose) {
+        this.vueGrille = vueGrille;
         this.surPose = surPose;
         // identifiant de la pièce en cours de glisser-déposer, ou null. C'est de l'affichage, pas de l'état du jeu.
         this.idPieceGlissee = null;
 
         // les fonctions fléchées gardent "this" : sans elles, this désignerait la grille et non le glisser-déposer
-        const conteneur = document.getElementById("grille");
-        conteneur.addEventListener("dragover", (evenement) => this.gererSurvol(evenement));
-        conteneur.addEventListener("drop", (evenement) => this.gererLacher(evenement));
+        vueGrille.conteneur.addEventListener("dragover", (evenement) => this.gererSurvol(evenement));
+        vueGrille.conteneur.addEventListener("drop", (evenement) => this.gererLacher(evenement));
     }
 
     /**
@@ -290,7 +293,7 @@ class GlisserDeposer {
      */
     terminer() {
         this.idPieceGlissee = null;
-        effacerApercu();
+        this.vueGrille.effacerApercu();
     }
 
     /**
@@ -305,8 +308,8 @@ class GlisserDeposer {
         const taille = Forme.parNom(forme).taille();
 
         // position du curseur en nombre de cases, virgule comprise
-        const ligneCurseur = Number(element.dataset.ligne) + evenement.offsetY / TAILLE_CASE;
-        const colonneCurseur = Number(element.dataset.colonne) + evenement.offsetX / TAILLE_CASE;
+        const ligneCurseur = Number(element.dataset.ligne) + evenement.offsetY / VueGrille.TAILLE_CASE;
+        const colonneCurseur = Number(element.dataset.colonne) + evenement.offsetX / VueGrille.TAILLE_CASE;
 
         // on recule d'une demi-forme pour que le curseur se retrouve au milieu
         return {
@@ -322,10 +325,11 @@ class GlisserDeposer {
      */
     trouverCible(evenement) {
         // closest remonte de l'élément touché jusqu'à la case qui le contient ; renvoie null pour la marge de la grille
+        const partie = this.vueGrille.partieAffichee;
         const element = evenement.target.closest(".case");
-        if (element === null || etatAffiche === null) return null;
+        if (element === null || partie === null) return null;
 
-        const piece = etatAffiche.trouverPiece(this.idPieceGlissee);
+        const piece = partie.trouverPiece(this.idPieceGlissee);
         if (piece === null) return null;
 
         return { element: element, piece: piece };
@@ -345,7 +349,7 @@ class GlisserDeposer {
         evenement.dataTransfer.dropEffect = "move";
 
         const origine = this.calculerOrigine(cible.piece.forme, cible.element, evenement);
-        afficherApercu(etatAffiche, cible.piece.forme, origine.ligne, origine.colonne);
+        this.vueGrille.afficherApercu(cible.piece.forme, origine.ligne, origine.colonne);
     }
 
     /**
@@ -358,7 +362,7 @@ class GlisserDeposer {
         if (cible === null) return;
 
         evenement.preventDefault();
-        effacerApercu();
+        this.vueGrille.effacerApercu();
 
         const origine = this.calculerOrigine(cible.piece.forme, cible.element, evenement);
         this.surPose(cible.piece.id, origine.ligne, origine.colonne);
@@ -490,7 +494,7 @@ class VueReserve {
                 for (const [l, c] of forme.cases) {
                     if (l === ligne && c === colonne) occupee = true;
                 }
-                if (occupee) colorerCase(petiteCase, piece.couleur);
+                if (occupee) VueGrille.colorerCase(petiteCase, piece.couleur);
 
                 element.appendChild(petiteCase);
             }

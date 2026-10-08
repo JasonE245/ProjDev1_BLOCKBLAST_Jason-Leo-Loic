@@ -95,7 +95,7 @@ let record = Number(localStorage.getItem(CLE_RECORD)) || 0;
  * :return: rien
  */
 function afficherTout() {
-    afficherGrille(partie);
+    vueGrille.afficher(partie);
     vueScore.afficher(partie, record);
     vueReserve.afficher(partie);
     vueScore.afficherFin(partie);
@@ -125,7 +125,7 @@ function surPosePiece(idPiece, ligne, colonne) {
     }
 
     afficherTout();
-    animerLignesCassees(partie, cassees);
+    vueGrille.animer(cassees);
 }
 
 /**
@@ -165,7 +165,8 @@ function surChoixTheme(theme) {
 // on retrouve le thème choisi la dernière fois, et à défaut on prend le premier de la liste
 Themes.appliquer(Themes.trouverParNom(localStorage.getItem(CLE_THEME)));
 Themes.afficherChoix(surChoixTheme);
-const glisserDeposer = new GlisserDeposer(surPosePiece);
+const vueGrille = new VueGrille();
+const glisserDeposer = new GlisserDeposer(vueGrille, surPosePiece);
 new ModeDebug(surBasculeCase);
 const vueScore = new VueScore(surRejouer);
 const vueReserve = new VueReserve(glisserDeposer);
