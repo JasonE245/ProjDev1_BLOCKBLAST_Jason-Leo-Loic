@@ -82,23 +82,23 @@ const TAILLE_GRILLE = 8;
 const CLE_RECORD = "blockblast-record";
 const CLE_THEME = "blockblast-theme";
 
-// état de la partie en cours
-let etat = creerEtatInitial(TAILLE_GRILLE, NB_COULEURS_PIECES);
+// la partie en cours
+let partie = new Partie(TAILLE_GRILLE, NB_COULEURS_PIECES);
 
 // Number(null) vaut 0, et le "|| 0" couvre le cas où la valeur enregistrée ne serait pas un nombre
 let record = Number(localStorage.getItem(CLE_RECORD)) || 0;
 
 /**
- * redessine toute la page à partir de l'état courant
+ * redessine toute la page à partir de la partie en cours
  * on redessine tout plutôt que de chercher ce qui a changé : à cette taille de grille c'est instantané, et c'est
  * beaucoup plus simple à suivre
  * :return: rien
  */
 function afficherTout() {
-    afficherGrille(etat);
-    afficherScore(etat, record);
-    afficherReserve(etat);
-    afficherFinDePartie(etat);
+    afficherGrille(partie);
+    afficherScore(partie, record);
+    afficherReserve(partie);
+    afficherFinDePartie(partie);
 }
 
 /**
@@ -109,22 +109,23 @@ function afficherTout() {
  * :return: rien
  */
 function surPosePiece(idPiece, ligne, colonne) {
-    const piece = trouverPiece(etat.pieces, idPiece);
+    const piece = partie.trouverPiece(idPiece);
     if (piece === null) return;
 
     // calculé AVANT la pose : après, les lignes ont déjà sauté et il n'y aurait plus rien à faire clignoter
-    const cassees = etat.grille.lignesCasseesPar(piece.forme, ligne, colonne);
+    const cassees = partie.grille.lignesCasseesPar(piece.forme, ligne, colonne);
 
-    etat = poserPiece(etat, idPiece, ligne, colonne);
+    // pose impossible : rien n'a changé, il n'y a rien à redessiner
+    if (!partie.poserPiece(idPiece, ligne, colonne)) return;
 
     // mise à jour du record, conservé pour les prochaines parties
-    if (etat.score > record) {
-        record = etat.score;
+    if (partie.score > record) {
+        record = partie.score;
         localStorage.setItem(CLE_RECORD, String(record));
     }
 
     afficherTout();
-    animerLignesCassees(etat, cassees);
+    animerLignesCassees(partie, cassees);
 }
 
 /**
@@ -134,7 +135,7 @@ function surPosePiece(idPiece, ligne, colonne) {
  * :return: rien
  */
 function surBasculeCase(ligne, colonne) {
-    etat = basculerCase(etat, ligne, colonne);
+    partie.basculerCase(ligne, colonne);
     afficherTout();
 }
 
@@ -143,7 +144,7 @@ function surBasculeCase(ligne, colonne) {
  * :return: rien
  */
 function surRejouer() {
-    etat = creerEtatInitial(TAILLE_GRILLE, NB_COULEURS_PIECES);
+    partie = new Partie(TAILLE_GRILLE, NB_COULEURS_PIECES);
     afficherTout();
 }
 

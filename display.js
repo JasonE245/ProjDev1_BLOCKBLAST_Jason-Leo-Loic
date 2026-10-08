@@ -152,14 +152,14 @@ function afficherGrille(etat) {
 
     const conteneur = document.getElementById("grille");
     conteneur.style.setProperty("--taille-case", `${TAILLE_CASE}px`);
-    conteneur.style.gridTemplateColumns = `repeat(${etat.taille}, var(--taille-case))`;
-    conteneur.style.gridTemplateRows = `repeat(${etat.taille}, var(--taille-case))`;
+    conteneur.style.gridTemplateColumns = `repeat(${etat.grille.taille}, var(--taille-case))`;
+    conteneur.style.gridTemplateRows = `repeat(${etat.grille.taille}, var(--taille-case))`;
 
     // on repart d'une grille vide plutôt que de modifier les cases existantes
     conteneur.innerHTML = "";
 
-    for (let ligne = 0; ligne < etat.taille; ligne++) {
-        for (let colonne = 0; colonne < etat.taille; colonne++) {
+    for (let ligne = 0; ligne < etat.grille.taille; ligne++) {
+        for (let colonne = 0; colonne < etat.grille.taille; colonne++) {
             const element = document.createElement("div");
             element.className = "case";
             // les coordonnées sont stockées sur la case pour être relues au moment du clic ou du lâcher
@@ -216,7 +216,7 @@ function afficherApercu(etat, forme, ligne, colonne) {
 
     // met en évidence les lignes et colonnes que cette pose ferait sauter
     const cassees = etat.grille.lignesCasseesPar(forme, ligne, colonne);
-    for (const element of casesDesLignes(etat.taille, cassees)) {
+    for (const element of casesDesLignes(etat.grille.taille, cassees)) {
         element.classList.add("apercu-suppression");
     }
 }
@@ -229,7 +229,7 @@ function afficherApercu(etat, forme, ligne, colonne) {
  * :return: rien, l'animation se lance
  */
 function animerLignesCassees(etat, cassees) {
-    for (const element of casesDesLignes(etat.taille, cassees)) {
+    for (const element of casesDesLignes(etat.grille.taille, cassees)) {
         element.classList.add("vient-de-sauter");
 
         // la durée est celle définie dans le CSS : il n'y a donc pas de valeur à garder synchronisée des deux côtés
@@ -292,7 +292,7 @@ function pieceGlisseeSur(evenement) {
     const element = evenement.target.closest(".case");
     if (element === null || etatAffiche === null) return null;
 
-    const piece = trouverPiece(etatAffiche.pieces, idPieceGlissee);
+    const piece = etatAffiche.trouverPiece(idPieceGlissee);
     if (piece === null) return null;
 
     return { element: element, piece: piece };
@@ -474,7 +474,7 @@ function afficherScore(etat, record) {
  * :return: rien
  */
 function afficherFinDePartie(etat) {
-    const perdu = partieTerminee(etat);
+    const perdu = etat.estTerminee();
     document.getElementById("fin-de-partie").classList.toggle("ouvert", perdu);
 
     if (perdu) {

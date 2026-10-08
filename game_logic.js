@@ -4,11 +4,11 @@
 // Version: V.2.0
 // dernière modif: 10.09.2026
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Ce fichier contient les règles du jeu. Aucune fonction ici ne touche à l'affichage.
+// Ce fichier contient les règles du jeu. Aucune classe ici ne touche à l'affichage.
 //
-// Règle du fichier : on ne modifie jamais l'état ni la grille qu'on reçoit, on en fabrique une copie modifiée.
-// C'est le rôle de la fonction etatAvec(). L'ancien état reste donc intact, ce qui permet par exemple de comparer
-// l'avant et l'après d'un coup (voir surPosePiece dans main.js).
+// Forme, Bareme et Tirage ne changent jamais. Grille et Partie, elles, se modifient au fil du jeu : leurs méthodes
+// changent l'objet lui-même. Règle à respecter : seul main.js appelle les méthodes qui modifient la partie,
+// l'affichage ne fait que la lire.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // une forme est une liste de cases en coordonnées [ligne, colonne] à partir du coin haut-gauche (0, 0)
@@ -137,24 +137,6 @@ Forme.TOUTES = {
     diagonale3_montante: new Forme([[0, 2], [1, 1], [2, 0]]),
     diagonale3_descendante: new Forme([[0, 0], [1, 1], [2, 2]]),
 };
-
-// nombre de pièces proposées au joueur en même temps
-const PIECES_PAR_LOT = 3;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// outils sur l'état
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * fabrique une copie de l'état avec certains champs remplacés
- * c'est le seul endroit du programme où l'on utilise "..." : partout ailleurs on passe par cette fonction
- * :param etat: l'état de départ, qui n'est jamais modifié
- * :param changements: objet contenant uniquement les champs à remplacer
- * :return: un nouvel état, copie du premier avec les changements appliqués
- */
-function etatAvec(etat, changements) {
-    return { ...etat, ...changements };
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // grille
@@ -593,146 +575,132 @@ Tirage.prochainNumero = 1;
 // état de la partie
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/**
- * fabrique l'état de départ d'une nouvelle partie
- * :param taille: côté de la grille
- * :param nbCouleurs: nombre de couleurs de pièces disponibles
- * :return: un état complet, avec son premier lot de pièces
- */
-function creerEtatInitial(taille = 8, nbCouleurs = 4) {
-    const etatVide = {
-        taille: taille,
-        nbCouleurs: nbCouleurs,
-        grille: new Grille(taille),
-        score: 0,
-        combo: 0,
+// la partie en cours : la grille, le score, le combo et les pièces proposées au joueur
+class Partie {
+    /**
+     * prépare une nouvelle partie : grille vide, score à zéro et premier lot de pièces
+     * :param taille: côté de la grille
+     * :param nbCouleurs: nombre de couleurs de pièces disponibles
+     */
+    constructor(taille = 8, nbCouleurs = 4) {
+        this.grille = new Grille(taille);
+        this.nbCouleurs = nbCouleurs;
+        this.score = 0;
+        this.combo = 0;
         // passe à true dès qu'une ligne saute dans le lot en cours, et décide en fin de lot si le combo est conservé
-        ligneCasseeDansLeLot: false,
-        pieces: [],
-    };
-    return etatAvec(etatVide, { pieces: Tirage.tirerLot(etatVide.grille, PIECES_PAR_LOT, etatVide.nbCouleurs) });
-}
-
-/**
- * cherche une pièce dans la réserve à partir de son identifiant
- * :param pieces: la réserve de pièces
- * :param id: identifiant cherché
- * :return: la pièce, ou null si elle n'est pas dans la réserve
- */
-function trouverPiece(pieces, id) {
-    for (const piece of pieces) {
-        if (piece.id === id) return piece;
-    }
-    return null;
-}
-
-/**
- * vide les lignes et colonnes pleines et ajoute les points correspondants
- * le combo monte ici mais ne redescend jamais : c'est poserPiece qui tranche en fin de lot
- * :param etat: l'état à nettoyer, qui n'est pas modifié
- * :return: un nouvel état, identique si rien n'était plein
- */
-function supprimerLignesPleines(etat) {
-    const pleines = etat.grille.chercherLignesPleines();
-    const nbLignes = pleines.lignes.length + pleines.colonnes.length;
-
-    // rien de plein : l'état ne change pas
-    if (nbLignes === 0) return etat;
-
-    // la grille de l'état reçu ne doit pas bouger : on vide les lignes sur une copie
-    const grille = etat.grille.copier();
-    grille.viderLignes(pleines);
-
-    return etatAvec(etat, {
-        grille: grille,
-        score: etat.score + Bareme.calculerPoints(nbLignes, etat.combo),
-        combo: etat.combo + 1,
-        ligneCasseeDansLeLot: true,
-    });
-}
-
-/**
- * pose une pièce sur la grille et applique toutes les conséquences du coup
- * si la pose est impossible, l'état est renvoyé tel quel
- * :param etat: l'état avant le coup, qui n'est pas modifié
- * :param idPiece: identifiant de la pièce posée
- * :param ligne: ligne du coin haut-gauche
- * :param colonne: colonne du coin haut-gauche
- * :return: un nouvel état
- */
-function poserPiece(etat, idPiece, ligne, colonne) {
-    const piece = trouverPiece(etat.pieces, idPiece);
-    if (piece === null || !etat.grille.peutPoser(piece.forme, ligne, colonne)) {
-        return etat;
+        this.ligneCasseeDansLeLot = false;
+        this.pieces = Tirage.tirerLot(this.grille, Partie.PIECES_PAR_LOT, nbCouleurs);
     }
 
-    // la réserve sans la pièce qu'on vient de poser
-    const reserve = [];
-    for (const autre of etat.pieces) {
-        if (autre.id !== idPiece) reserve.push(autre);
+    /**
+     * cherche une pièce dans la réserve à partir de son identifiant
+     * :param id: identifiant cherché
+     * :return: la pièce, ou null si elle n'est pas dans la réserve
+     */
+    trouverPiece(id) {
+        for (const piece of this.pieces) {
+            if (piece.id === id) return piece;
+        }
+        return null;
     }
 
-    // 1. la pièce est dessinée sur une copie de la grille et rapporte un point par case occupée
-    //    on écrit couleur + 1 parce que 0 est réservé aux cases vides
-    const grille = etat.grille.copier();
-    grille.poserForme(piece.forme, ligne, colonne, piece.couleur + 1);
+    /**
+     * retire une pièce de la réserve
+     * :param id: identifiant de la pièce à retirer
+     * :return: rien, la réserve est modifiée
+     */
+    retirerPiece(id) {
+        const reserve = [];
 
-    const posee = etatAvec(etat, {
-        grille: grille,
-        pieces: reserve,
-        score: etat.score + Forme.parNom(piece.forme).nbCases,
-    });
-
-    // 2. les lignes et colonnes devenues pleines sautent et rapportent leurs points
-    const nettoye = supprimerLignesPleines(posee);
-
-    // 3. il reste des pièces dans la réserve : le lot n'est pas fini, on s'arrête là
-    if (nettoye.pieces.length > 0) return nettoye;
-
-    // 4. fin de lot : le combo ne retombe à 0 que si aucune des 3 pièces n'a cassé de ligne
-    //    le lot suivant est tiré sur la grille telle qu'elle sera affichée au joueur
-    return etatAvec(nettoye, {
-        combo: nettoye.ligneCasseeDansLeLot ? nettoye.combo : 0,
-        ligneCasseeDansLeLot: false,
-        pieces: Tirage.tirerLot(nettoye.grille, PIECES_PAR_LOT, nettoye.nbCouleurs),
-    });
-}
-
-/**
- * vérifie si la partie est terminée => aucune des pièces proposées ne rentre nulle part
- * :param etat: l'état du jeu
- * :return: true si le joueur est bloqué, sinon false
- */
-function partieTerminee(etat) {
-    for (const piece of etat.pieces) {
-        if (etat.grille.peutPoserQuelquePart(piece.forme)) return false;
+        for (const piece of this.pieces) {
+            if (piece.id !== id) reserve.push(piece);
+        }
+        this.pieces = reserve;
     }
-    return true;
+
+    /**
+     * vide les lignes et colonnes pleines et ajoute les points correspondants
+     * le combo monte ici mais ne redescend jamais : c'est poserPiece qui tranche en fin de lot
+     * :return: rien, la partie est modifiée
+     */
+    supprimerLignesPleines() {
+        const pleines = this.grille.chercherLignesPleines();
+        const nbLignes = pleines.lignes.length + pleines.colonnes.length;
+
+        // rien de plein : rien à faire
+        if (nbLignes === 0) return;
+
+        this.grille.viderLignes(pleines);
+        this.score += Bareme.calculerPoints(nbLignes, this.combo);
+        this.combo += 1;
+        this.ligneCasseeDansLeLot = true;
+    }
+
+    /**
+     * pose une pièce sur la grille et applique toutes les conséquences du coup
+     * :param idPiece: identifiant de la pièce posée
+     * :param ligne: ligne du coin haut-gauche
+     * :param colonne: colonne du coin haut-gauche
+     * :return: true si la pièce a été posée, false si la pose était impossible (la partie ne change alors pas)
+     */
+    poserPiece(idPiece, ligne, colonne) {
+        const piece = this.trouverPiece(idPiece);
+        if (piece === null || !this.grille.peutPoser(piece.forme, ligne, colonne)) {
+            return false;
+        }
+
+        // 1. la pièce est dessinée sur la grille, quitte la réserve et rapporte un point par case occupée
+        //    on écrit couleur + 1 parce que 0 est réservé aux cases vides
+        this.grille.poserForme(piece.forme, ligne, colonne, piece.couleur + 1);
+        this.retirerPiece(idPiece);
+        this.score += Forme.parNom(piece.forme).nbCases;
+
+        // 2. les lignes et colonnes devenues pleines sautent et rapportent leurs points
+        this.supprimerLignesPleines();
+
+        // 3. il reste des pièces dans la réserve : le lot n'est pas fini, on s'arrête là
+        if (this.pieces.length > 0) return true;
+
+        // 4. fin de lot : le combo ne retombe à 0 que si aucune des 3 pièces n'a cassé de ligne
+        //    le lot suivant est tiré sur la grille telle qu'elle sera affichée au joueur
+        if (!this.ligneCasseeDansLeLot) {
+            this.combo = 0;
+        }
+        this.ligneCasseeDansLeLot = false;
+        this.pieces = Tirage.tirerLot(this.grille, Partie.PIECES_PAR_LOT, this.nbCouleurs);
+        return true;
+    }
+
+    /**
+     * vérifie si la partie est terminée => aucune des pièces proposées ne rentre nulle part
+     * :return: true si le joueur est bloqué, sinon false
+     */
+    estTerminee() {
+        for (const piece of this.pieces) {
+            if (this.grille.peutPoserQuelquePart(piece.forme)) return false;
+        }
+        return true;
+    }
+
+    /**
+     * remplit une case vide ou vide une case pleine
+     * sert au mode debug, pour préparer une situation à la main
+     * :param ligne: ligne de la case
+     * :param colonne: colonne de la case
+     * :return: rien, la grille est modifiée
+     */
+    basculerCase(ligne, colonne) {
+        this.grille.basculerCase(ligne, colonne);
+    }
 }
 
-/**
- * remplit une case vide ou vide une case pleine
- * sert au mode debug, pour préparer une situation à la main
- * :param etat: l'état de départ, qui n'est pas modifié
- * :param ligne: ligne de la case
- * :param colonne: colonne de la case
- * :return: un nouvel état
- */
-function basculerCase(etat, ligne, colonne) {
-    const grille = etat.grille.copier();
-    grille.basculerCase(ligne, colonne);
-
-    return etatAvec(etat, { grille: grille });
-}
+// nombre de pièces proposées au joueur en même temps
+Partie.PIECES_PAR_LOT = 3;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// rend les fonctions accessibles aux tests exécutés avec Node
+// rend les classes accessibles aux tests exécutés avec Node
 // dans le navigateur la variable "module" n'existe pas, la ligne est donc simplement ignorée
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 if (typeof module !== "undefined") {
-    module.exports = {
-        Forme, Tirage, PIECES_PAR_LOT,
-        Grille,
-        Bareme, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
-    };
+    module.exports = { Forme, Grille, Bareme, Tirage, Partie };
 }

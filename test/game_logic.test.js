@@ -11,21 +11,23 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const {
-    Forme, Tirage, PIECES_PAR_LOT,
-    Grille,
-    Bareme, creerEtatInitial, poserPiece, partieTerminee, basculerCase,
-} = require("../game_logic.js");
+const { Forme, Grille, Bareme, Tirage, Partie } = require("../game_logic.js");
 
 /**
- * fabrique un état de test à partir d'une grille et de pièces choisies
+ * fabrique une partie de test à partir d'une grille et de pièces choisies
  * :param grille: la grille voulue
  * :param pieces: la réserve voulue
  * :param extra: champs supplémentaires à remplacer, par exemple le combo
- * :return: un état complet, prêt à passer à poserPiece
+ * :return: une Partie prête à jouer
  */
-function etatDeTest(grille, pieces, extra = {}) {
-    return { ...creerEtatInitial(grille.taille), grille, pieces, ...extra };
+function partieDeTest(grille, pieces, extra = {}) {
+    const partie = new Partie(grille.taille);
+    partie.grille = grille;
+    partie.pieces = pieces;
+    for (const champ of Object.keys(extra)) {
+        partie[champ] = extra[champ];
+    }
+    return partie;
 }
 
 /**
@@ -135,36 +137,42 @@ test("lignesCasseesPar ne renvoie rien si la pose est impossible", () => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 test("poser une pièce rapporte un point par case", () => {
-    const etat = etatDeTest(new Grille(8), [{ id: "p1", forme: "carre_2x2", couleur: 0 }]);
+    const partie = partieDeTest(new Grille(8), [{ id: "p1", forme: "carre_2x2", couleur: 0 }]);
 
-    assert.equal(poserPiece(etat, "p1", 0, 0).score, 4);
+    assert.equal(partie.poserPiece("p1", 0, 0), true);
+    assert.equal(partie.score, 4);
+});
+
+test("une pièce posée quitte la réserve", () => {
+    const partie = partieDeTest(new Grille(8), [
+        { id: "p1", forme: "bloc", couleur: 0 },
+        { id: "p2", forme: "bloc", couleur: 0 },
+    ]);
+
+    partie.poserPiece("p1", 0, 0);
+
+    assert.equal(partie.trouverPiece("p1"), null);
+    assert.equal(partie.pieces.length, 1);
 });
 
 test("compléter une ligne la vide et rapporte les points de suppression", () => {
-    const etat = etatDeTest(grilleLignePresquePleine(), [{ id: "p1", forme: "bloc", couleur: 0 }]);
-    const suivant = poserPiece(etat, "p1", 0, 7);
+    const partie = partieDeTest(grilleLignePresquePleine(), [{ id: "p1", forme: "bloc", couleur: 0 }]);
+    partie.poserPiece("p1", 0, 7);
 
     for (let colonne = 0; colonne < 8; colonne++) {
-        assert.equal(suivant.grille.lireCase(0, colonne), 0, "la ligne aurait dû être vidée");
+        assert.equal(partie.grille.lireCase(0, colonne), 0, "la ligne aurait dû être vidée");
     }
-    assert.equal(suivant.score, 1 + Bareme.calculerPoints(1, 0));
-    assert.equal(suivant.combo, 1);
+    assert.equal(partie.score, 1 + Bareme.calculerPoints(1, 0));
+    assert.equal(partie.combo, 1);
 });
 
-test("une pose impossible laisse l'état inchangé", () => {
-    const etat = etatDeTest(new Grille(8), [{ id: "p1", forme: "ligne5_h", couleur: 0 }]);
+test("une pose impossible ne change rien à la partie", () => {
+    const partie = partieDeTest(new Grille(8), [{ id: "p1", forme: "ligne5_h", couleur: 0 }]);
+    const avant = JSON.stringify(partie);
 
-    assert.equal(poserPiece(etat, "p1", 0, 6), etat);
-    assert.equal(poserPiece(etat, "inconnue", 0, 0), etat);
-});
-
-test("poserPiece ne modifie jamais l'état reçu", () => {
-    const etat = etatDeTest(grilleLignePresquePleine(), [{ id: "p1", forme: "bloc", couleur: 0 }]);
-    const avant = JSON.stringify(etat);
-
-    poserPiece(etat, "p1", 0, 7);
-
-    assert.equal(JSON.stringify(etat), avant);
+    assert.equal(partie.poserPiece("p1", 0, 6), false, "la pièce dépasse de la grille");
+    assert.equal(partie.poserPiece("inconnue", 0, 0), false, "la pièce n'existe pas");
+    assert.equal(JSON.stringify(partie), avant);
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -172,25 +180,27 @@ test("poserPiece ne modifie jamais l'état reçu", () => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 test("le combo retombe à zéro si aucune pièce du lot n'a cassé de ligne", () => {
-    const etat = etatDeTest(new Grille(8), [{ id: "p1", forme: "bloc", couleur: 0 }], {
+    const partie = partieDeTest(new Grille(8), [{ id: "p1", forme: "bloc", couleur: 0 }], {
         combo: 3,
         ligneCasseeDansLeLot: false,
     });
 
-    assert.equal(poserPiece(etat, "p1", 4, 4).combo, 0);
+    partie.poserPiece("p1", 4, 4);
+
+    assert.equal(partie.combo, 0);
 });
 
 test("le combo tient si une pièce du lot a cassé une ligne", () => {
-    let etat = etatDeTest(grilleLignePresquePleine(), [
+    const partie = partieDeTest(grilleLignePresquePleine(), [
         { id: "p1", forme: "bloc", couleur: 0 },
         { id: "p2", forme: "bloc", couleur: 0 },
     ]);
 
-    etat = poserPiece(etat, "p1", 0, 7); // casse la ligne
-    assert.equal(etat.combo, 1);
+    partie.poserPiece("p1", 0, 7); // casse la ligne
+    assert.equal(partie.combo, 1);
 
-    etat = poserPiece(etat, "p2", 4, 4); // ne casse rien, mais termine le lot
-    assert.equal(etat.combo, 1);
+    partie.poserPiece("p2", 4, 4); // ne casse rien, mais termine le lot
+    assert.equal(partie.combo, 1);
 });
 
 test("le barème suit la formule annoncée et reste borné", () => {
@@ -219,12 +229,12 @@ test("les grosses formes sortent plus souvent du sac", () => {
 
 test("le lot tiré est toujours posable en entier", () => {
     for (let essai = 0; essai < 20; essai++) {
-        const etat = creerEtatInitial(8);
-        const formes = etat.pieces.map((piece) => piece.forme);
+        const partie = new Partie(8);
+        const formes = partie.pieces.map((piece) => piece.forme);
 
-        assert.equal(etat.pieces.length, PIECES_PAR_LOT);
+        assert.equal(partie.pieces.length, Partie.PIECES_PAR_LOT);
         assert.ok(
-            Tirage.peutToutPoserDansUnOrdre(etat.grille, formes),
+            Tirage.peutToutPoserDansUnOrdre(partie.grille, formes),
             "le lot de départ devrait être entièrement posable"
         );
     }
@@ -237,16 +247,16 @@ test("la partie est finie quand plus aucune pièce ne rentre", () => {
     }
     pleine.ecrireCase(0, 0, 0);
 
-    assert.equal(partieTerminee(etatDeTest(pleine, [{ id: "p1", forme: "carre_2x2", couleur: 0 }])), true);
-    assert.equal(partieTerminee(etatDeTest(pleine, [{ id: "p1", forme: "bloc", couleur: 0 }])), false);
+    assert.equal(partieDeTest(pleine, [{ id: "p1", forme: "carre_2x2", couleur: 0 }]).estTerminee(), true);
+    assert.equal(partieDeTest(pleine.copier(), [{ id: "p1", forme: "bloc", couleur: 0 }]).estTerminee(), false);
 });
 
 test("basculerCase remplit puis vide une case", () => {
-    const etat = etatDeTest(new Grille(8), []);
+    const partie = partieDeTest(new Grille(8), []);
 
-    const remplie = basculerCase(etat, 2, 3);
-    assert.equal(remplie.grille.lireCase(2, 3), 1);
-    assert.equal(etat.grille.lireCase(2, 3), 0, "l'état d'origine ne doit pas bouger");
+    partie.basculerCase(2, 3);
+    assert.equal(partie.grille.lireCase(2, 3), 1);
 
-    assert.equal(basculerCase(remplie, 2, 3).grille.lireCase(2, 3), 0);
+    partie.basculerCase(2, 3);
+    assert.equal(partie.grille.lireCase(2, 3), 0);
 });
