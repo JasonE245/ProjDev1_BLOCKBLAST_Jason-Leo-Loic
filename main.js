@@ -75,100 +75,118 @@ record:
 */
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// côté de la grille de jeu
-const TAILLE_GRILLE = 8;
+// le jeu : il crée la partie et les vues, et réagit aux actions du joueur
+// c'est la seule classe qui modifie la partie ; les vues ne font que la lire, et lui transmettre les actions du joueur
+class Jeu {
+    /**
+     * prépare le jeu : thème, partie, vues, puis premier affichage
+     */
+    constructor() {
+        // on retrouve le thème choisi la dernière fois, et à défaut on prend le premier de la liste
+        Themes.appliquer(Themes.trouverParNom(localStorage.getItem(Jeu.CLE_THEME)));
 
-// noms sous lesquels le navigateur retient le record et le thème choisi
-const CLE_RECORD = "blockblast-record";
-const CLE_THEME = "blockblast-theme";
+        // la partie en cours
+        this.partie = new Partie(Jeu.TAILLE_GRILLE, Themes.NB_COULEURS);
 
-// la partie en cours
-let partie = new Partie(TAILLE_GRILLE, Themes.NB_COULEURS);
+        // Number(null) vaut 0, et le "|| 0" couvre le cas où la valeur enregistrée ne serait pas un nombre
+        this.record = Number(localStorage.getItem(Jeu.CLE_RECORD)) || 0;
 
-// Number(null) vaut 0, et le "|| 0" couvre le cas où la valeur enregistrée ne serait pas un nombre
-let record = Number(localStorage.getItem(CLE_RECORD)) || 0;
+        // chaque vue reçoit la fonction à appeler quand le joueur agit
+        // les fonctions fléchées gardent "this" : sans elles, this ne désignerait plus le jeu au moment de l'appel
+        const surPose = (idPiece, ligne, colonne) => this.surPosePiece(idPiece, ligne, colonne);
+        const surBascule = (ligne, colonne) => this.surBasculeCase(ligne, colonne);
 
-/**
- * redessine toute la page à partir de la partie en cours
- * on redessine tout plutôt que de chercher ce qui a changé : à cette taille de grille c'est instantané, et c'est
- * beaucoup plus simple à suivre
- * :return: rien
- */
-function afficherTout() {
-    vueGrille.afficher(partie);
-    vueScore.afficher(partie, record);
-    vueReserve.afficher(partie);
-    vueScore.afficherFin(partie);
-}
+        Themes.afficherChoix((theme) => this.surChoixTheme(theme));
+        this.vueGrille = new VueGrille();
+        this.glisserDeposer = new GlisserDeposer(this.vueGrille, surPose);
+        this.vueReserve = new VueReserve(this.glisserDeposer);
+        this.vueScore = new VueScore(() => this.surRejouer());
+        this.modeDebug = new ModeDebug(surBascule);
 
-/**
- * appelée quand le joueur lâche une pièce sur la grille
- * :param idPiece: identifiant de la pièce lâchée
- * :param ligne: ligne du coin haut-gauche
- * :param colonne: colonne du coin haut-gauche
- * :return: rien
- */
-function surPosePiece(idPiece, ligne, colonne) {
-    const piece = partie.trouverPiece(idPiece);
-    if (piece === null) return;
-
-    // calculé AVANT la pose : après, les lignes ont déjà sauté et il n'y aurait plus rien à faire clignoter
-    const cassees = partie.grille.lignesCasseesPar(piece.forme, ligne, colonne);
-
-    // pose impossible : rien n'a changé, il n'y a rien à redessiner
-    if (!partie.poserPiece(idPiece, ligne, colonne)) return;
-
-    // mise à jour du record, conservé pour les prochaines parties
-    if (partie.score > record) {
-        record = partie.score;
-        localStorage.setItem(CLE_RECORD, String(record));
+        this.afficherTout();
     }
 
-    afficherTout();
-    vueGrille.animer(cassees);
+    /**
+     * redessine toute la page à partir de la partie en cours
+     * on redessine tout plutôt que de chercher ce qui a changé : à cette taille de grille c'est instantané, et c'est
+     * beaucoup plus simple à suivre
+     * :return: rien
+     */
+    afficherTout() {
+        this.vueGrille.afficher(this.partie);
+        this.vueScore.afficher(this.partie, this.record);
+        this.vueReserve.afficher(this.partie);
+        this.vueScore.afficherFin(this.partie);
+    }
+
+    /**
+     * appelée quand le joueur lâche une pièce sur la grille
+     * :param idPiece: identifiant de la pièce lâchée
+     * :param ligne: ligne du coin haut-gauche
+     * :param colonne: colonne du coin haut-gauche
+     * :return: rien
+     */
+    surPosePiece(idPiece, ligne, colonne) {
+        const piece = this.partie.trouverPiece(idPiece);
+        if (piece === null) return;
+
+        // calculé AVANT la pose : après, les lignes ont déjà sauté et il n'y aurait plus rien à faire clignoter
+        const cassees = this.partie.grille.lignesCasseesPar(piece.forme, ligne, colonne);
+
+        // pose impossible : rien n'a changé, il n'y a rien à redessiner
+        if (!this.partie.poserPiece(idPiece, ligne, colonne)) return;
+
+        // mise à jour du record, conservé pour les prochaines parties
+        if (this.partie.score > this.record) {
+            this.record = this.partie.score;
+            localStorage.setItem(Jeu.CLE_RECORD, String(this.record));
+        }
+
+        this.afficherTout();
+        this.vueGrille.animer(cassees);
+    }
+
+    /**
+     * appelée quand le joueur clique une case en mode debug
+     * :param ligne: ligne de la case
+     * :param colonne: colonne de la case
+     * :return: rien
+     */
+    surBasculeCase(ligne, colonne) {
+        this.partie.basculerCase(ligne, colonne);
+        this.afficherTout();
+    }
+
+    /**
+     * appelée quand le joueur clique sur "Rejouer"
+     * :return: rien
+     */
+    surRejouer() {
+        this.partie = new Partie(Jeu.TAILLE_GRILLE, Themes.NB_COULEURS);
+        this.afficherTout();
+    }
+
+    /**
+     * appelée quand le joueur choisit un thème dans le panneau
+     * :param theme: le thème choisi
+     * :return: rien
+     */
+    surChoixTheme(theme) {
+        Themes.appliquer(theme);
+        localStorage.setItem(Jeu.CLE_THEME, theme.nom);
+    }
 }
 
-/**
- * appelée quand le joueur clique une case en mode debug
- * :param ligne: ligne de la case
- * :param colonne: colonne de la case
- * :return: rien
- */
-function surBasculeCase(ligne, colonne) {
-    partie.basculerCase(ligne, colonne);
-    afficherTout();
-}
+// côté de la grille de jeu
+Jeu.TAILLE_GRILLE = 8;
 
-/**
- * appelée quand le joueur clique sur "Rejouer"
- * :return: rien
- */
-function surRejouer() {
-    partie = new Partie(TAILLE_GRILLE, Themes.NB_COULEURS);
-    afficherTout();
-}
-
-/**
- * appelée quand le joueur choisit un thème dans le panneau
- * :param theme: le thème choisi
- * :return: rien
- */
-function surChoixTheme(theme) {
-    Themes.appliquer(theme);
-    localStorage.setItem(CLE_THEME, theme.nom);
-}
+// noms sous lesquels le navigateur retient le record et le thème choisi
+Jeu.CLE_RECORD = "blockblast-record";
+Jeu.CLE_THEME = "blockblast-theme";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // démarrage du jeu
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// on retrouve le thème choisi la dernière fois, et à défaut on prend le premier de la liste
-Themes.appliquer(Themes.trouverParNom(localStorage.getItem(CLE_THEME)));
-Themes.afficherChoix(surChoixTheme);
-const vueGrille = new VueGrille();
-const glisserDeposer = new GlisserDeposer(vueGrille, surPosePiece);
-new ModeDebug(surBasculeCase);
-const vueScore = new VueScore(surRejouer);
-const vueReserve = new VueReserve(glisserDeposer);
-
-afficherTout();
+// le jeu est gardé dans une variable pour pouvoir l'inspecter dans la console du navigateur (jeu.partie, jeu.record)
+const jeu = new Jeu();
