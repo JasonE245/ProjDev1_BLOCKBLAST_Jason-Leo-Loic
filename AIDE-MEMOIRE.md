@@ -3,36 +3,39 @@
 Deux parties : la **carte du code**, pour s'y retrouver quand on développe, et les
 **explications à raconter**, pour présenter le projet sans l'avoir sous les yeux.
 
-Les numéros de ligne correspondent à la branche `feature/lisibilite`.
+Les numéros de ligne correspondent à la branche `feature/classes`.
 
 ---
 
 # Partie 1 — La carte du code
 
-## Les trois fichiers
+## Les fichiers
 
-| Fichier | Lignes | Rôle en une phrase |
-| --- | --- | --- |
-| `game_logic.js` | 701 | Les règles. Ne touche jamais à la page, ne modifie jamais ce qu'il reçoit. |
-| `display.js` | 483 | Tout ce qui écrit dans la page. Lit l'état, ne le modifie jamais. |
-| `main.js` | 176 | Relie les deux. Le seul endroit qui remplace `etat` et qui écrit dans le navigateur. |
-| `index.html` | 54 | La structure seule. Tous les conteneurs sont vides au départ. |
-| `style.css` | 302 | La mise en forme. Les couleurs sont des variables posées par le thème. |
-| `test/game_logic.test.js` | 244 | 19 tests des règles, lancés par `npm test`. |
+| Fichier | Lignes | Classes | Rôle en une phrase |
+| --- | --- | --- | --- |
+| `game_logic.js` | 706 | 5 | Les règles. Ne touche jamais à la page. |
+| `display.js` | 576 | 6 | Tout ce qui écrit dans la page. Lit la partie, ne la modifie jamais. |
+| `main.js` | 196 | 1 | La classe `Jeu`, qui relie les deux autres. Le seul à modifier la partie. |
+| `index.html` | 54 | | La structure seule. Tous les conteneurs sont vides au départ. |
+| `style.css` | 302 | | La mise en forme. Les couleurs sont des variables posées par le thème. |
+| `test/game_logic.test.js` | 262 | | 20 tests des règles, lancés par `npm test`. |
 
 La règle de dépendance, à retenir : **`main.js` connaît les deux autres, `display.js`
 connaît `game_logic.js`, et `game_logic.js` ne connaît personne.** C'est pour ça qu'on
 peut tester les règles avec Node, sans navigateur.
 
-## L'état du jeu
+Il n'y a plus qu'**un seul nom global** dans tout le projet : `jeu`, créé à la dernière
+ligne de `main.js`. Tout le reste est rangé dans les douze classes.
 
-Une seule variable, `etat`, déclarée dans `main.js` ligne 86. Tout le reste en découle.
+## La partie
+
+Un seul objet, `jeu.partie`, créé dans le constructeur de `Jeu` (`main.js` ligne
+93). Tout le reste en découle.
 
 ```js
 {
-    taille: 8,              // côté de la grille
+    grille: Grille,         // sa taille et ses cases : 0 = vide, 1 à 4 = couleur de la pièce posée
     nbCouleurs: 4,          // nombre de nuances de pièces
-    grille: [[0, 0, ...]],  // 0 = vide, 1 à 4 = couleur de la pièce posée
     score: 0,
     combo: 0,
     ligneCasseeDansLeLot: false,
@@ -42,87 +45,79 @@ Une seule variable, `etat`, déclarée dans `main.js` ligne 86. Tout le reste en
 
 ## Où est quoi — `game_logic.js`
 
-**Les données**
-
-| Ligne | Quoi |
-| --- | --- |
-| 21 | `Forme` — la classe des formes ; `Forme.TOUTES` (ligne 88) contient les 41 formes, en coordonnées `[ligne, colonne]` |
-| 142 | `PIECES_PAR_LOT` = 3 |
-| 371-376 | Le barème : `POINTS_PAR_LIGNE`, `PLAFOND_COMBO_PAR_LIGNE`, `MAX_LIGNES_COMPTEES` |
-| 411-419 | Le tirage : chances de triplet, poids des grosses formes, nombre d'essais |
-
-**Les outils sur la grille** — aucun ne modifie ce qu'il reçoit
-
-| Ligne | Fonction | Fait quoi |
+| Ligne | Quoi | Fait quoi |
 | --- | --- | --- |
-| 48 | `Forme.taille` | Le rectangle qui contient la forme, en lignes et colonnes |
-| 66 | `Forme.casesPosees` | Les cases occupées par une forme posée à tel endroit |
-| 155 | `etatAvec` | Copie l'état avec quelques champs remplacés. Le seul `...` du projet. |
-| 168 | `creerGrilleVide` | Une grille carrée de zéros |
-| 186 | `copierGrille` | Une copie indépendante |
-| 219 | `grilleAvecForme` | Copie avec une forme dessinée dessus |
-| 234 | `grilleSansLignes` | Copie avec les lignes et colonnes indiquées vidées |
-| 284 | `chercherLignesPleines` | Les index des lignes et colonnes entièrement occupées |
-| 305 | `peutPoser` | Est-ce que cette forme rentre ici ? |
-| 323 | `peutPoserQuelquePart` | Est-ce qu'elle rentre quelque part ? |
-| 341 | `lignesCasseesPar` | Ce que cette pose ferait sauter, sans rien poser |
-
-**Le tirage des pièces**
-
-| Ligne | Fonction | Fait quoi |
-| --- | --- | --- |
-| 428 | `construireSacDeFormes` | Le sac où les grosses formes sont en 5 exemplaires |
-| 461 | `creerPieces` | Tire un lot au hasard, sans vérifier |
-| 496 | `peutToutPoserDansUnOrdre` | **La fonction récursive.** Vérifie qu'un lot est posable en entier |
-| 535 | `tirerLotPosable` | Tire jusqu'à 40 lots et garde le premier qui passe la vérification |
-
-**Le déroulement d'une partie**
-
-| Ligne | Fonction | Fait quoi |
-| --- | --- | --- |
-| 571 | `creerEtatInitial` | L'état de départ, avec son premier lot |
-| 604 | `supprimerLignesPleines` | Vide les lignes, ajoute les points, monte le combo |
-| 628 | `poserPiece` | **Le cœur.** Pose, compte, nettoie, décide du combo, retire un lot |
-| 668 | `partieTerminee` | Plus aucune pièce ne rentre nulle part |
-| 683 | `basculerCase` | Remplit ou vide une case à la main (mode debug) |
+| 21 | **`class Forme`** | Une forme de pièce, décrite par ses cases en `[ligne, colonne]` |
+| 41 | `taille()` | Le rectangle qui contient la forme, en lignes et colonnes |
+| 59 | `casesPosees()` | Les cases occupées par la forme posée à tel endroit |
+| 74 | `Forme.parNom()` | Retrouve une forme à partir de son nom |
+| 88 | `Forme.TOUTES` | Le catalogue des 41 formes |
+| 147 | **`class Grille`** | La grille de jeu : 0 = case vide, 1 à 4 = couleur de la pièce posée |
+| 190 | `copier()` | Une copie indépendante, pour faire un essai sans toucher à la vraie |
+| 221 | `peutPoser()` | Est-ce que cette forme rentre ici ? |
+| 236 | `peutPoserQuelquePart()` | Est-ce qu'elle rentre quelque part ? |
+| 253 | `poserForme()` | Dessine une forme sur la grille |
+| 287 | `chercherLignesPleines()` | Les index des lignes et colonnes entièrement occupées |
+| 305 | `viderLignes()` | Vide les lignes et colonnes indiquées |
+| 328 | `lignesCasseesPar()` | Ce que cette pose ferait sauter, sans rien poser |
+| 347 | `simulerPose()` | La grille après une pose, sur une copie |
+| 377 | **`class Bareme`** | Le calcul des points. Que des méthodes `static` |
+| 398 | `Bareme.calculerPoints()` | Les points d'une suppression |
+| 408 | `Bareme.POINTS_PAR_LIGNE` | Les constantes du barème |
+| 421 | **`class Tirage`** | Le choix des pièces. Que des méthodes `static` |
+| 429 | `Tirage.construireSac()` | Le sac où les grosses formes sont en 5 exemplaires |
+| 493 | `Tirage.peutToutPoserDansUnOrdre()` | **La fonction récursive.** Vérifie qu'un lot est posable en entier |
+| 533 | `Tirage.tirerLot()` | Tire jusqu'à 40 lots et garde le premier qui passe la vérification |
+| 560 | `Tirage.CHANCE_TRIPLE_GRILLE_VIDE` | Les constantes du tirage |
+| 579 | **`class Partie`** | La partie en cours. Se modifie elle-même |
+| 585 | `constructor()` | Grille vide, score à zéro, premier lot |
+| 600 | `trouverPiece()` | Une pièce de la réserve, à partir de son identifiant |
+| 626 | `supprimerLignesPleines()` | Vide les lignes, ajoute les points, monte le combo |
+| 646 | `poserPiece()` | **Le cœur.** Pose, compte, nettoie, décide du combo, retire un lot. Renvoie `false` si impossible |
+| 678 | `estTerminee()` | Plus aucune pièce ne rentre nulle part |
+| 692 | `basculerCase()` | Remplit ou vide une case à la main (mode debug) |
 
 ## Où est quoi — `display.js`
 
-| Ligne | Fonction | Fait quoi |
+| Ligne | Quoi | Fait quoi |
 | --- | --- | --- |
-| 18 | `themes` | Les 4 palettes. Leur longueur décide du nombre de couleurs du jeu. |
-| 46 | `appliquerTheme` | Pose les couleurs comme variables CSS |
-| 87 | `TAILLE_CASE` = 40 | Transmis au CSS par `--taille-case` |
-| 91 | `etatAffiche` | Le dernier état dessiné. Les écouteurs viennent le lire ici. |
-| 94 | `idPieceGlissee` | La pièce en cours de glisser |
-| 149 | `afficherGrille` | Reconstruit les 64 cases |
-| 186 | `effacerApercu` | Enlève les marques d'aperçu |
-| 200 | `afficherApercu` | Montre où la pièce tomberait et ce que ça casserait |
-| 231 | `animerLignesCassees` | Fait clignoter les lignes qui viennent de sauter |
-| 254 | `origineDeLaPose` | Traduit la position du curseur en coin haut-gauche de la forme |
-| 277 | `initInteractionsGrille` | Branche les écouteurs, **une seule fois** |
-| 290 | `pieceGlisseeSur` | Quelle case, quelle pièce |
-| 306-341 | `surSurvolGlisser`, `surLacher`, `surClicDebug` | Les trois gestionnaires |
-| 383 | `creerElementPiece` | Fabrique une pièce de la réserve, glissable |
-| 440 | `afficherReserve` | Redessine les trois pièces |
-| 461 | `afficherScore` | Score, record, combo |
-| 476 | `afficherFinDePartie` | Montre ou cache l'écran de fin |
+| 17 | **`class Themes`** | Les thèmes de couleurs. Que des méthodes `static` |
+| 24 | `Themes.appliquer()` | Pose les couleurs comme variables CSS |
+| 55 | `Themes.afficherChoix()` | Remplit le panneau de choix et branche son bouton |
+| 76 | `Themes.LISTE` | Les 4 palettes. Leur longueur décide du nombre de couleurs du jeu |
+| 103 | **`class VueGrille`** | Le dessin de la grille |
+| 167 | `afficher()` | Reconstruit les 64 cases et retient la partie dessinée |
+| 211 | `afficherApercu()` | Montre où la pièce tomberait et ce que ça casserait |
+| 242 | `animer()` | Fait clignoter les lignes qui viennent de sauter |
+| 255 | `VueGrille.TAILLE_CASE` | 40 pixels, transmis au CSS par `--taille-case` |
+| 265 | **`class GlisserDeposer`** | Le glisser-déposer. Écouteurs posés **une seule fois** sur la grille |
+| 287 | `commencer()` | Appelée par la réserve quand le joueur attrape une pièce |
+| 308 | `calculerOrigine()` | Traduit la position du curseur en coin haut-gauche de la forme |
+| 344 | `gererSurvol()` | Montre l'aperçu pendant que la pièce survole la grille |
+| 361 | `gererLacher()` | Prévient le jeu quand la pièce est lâchée |
+| 379 | **`class ModeDebug`** | Taper « debug », puis cliquer les cases pour les remplir ou les vider |
+| 436 | `ModeDebug.CODE` | Le mot à taper |
+| 443 | **`class VueReserve`** | Le dessin des pièces proposées |
+| 476 | `creerElementPiece()` | Fabrique une pièce glissable |
+| 532 | **`class VueScore`** | Score, record, combo, et écran de fin avec son bouton Rejouer |
+| 568 | `afficherFin()` | Montre ou cache l'écran de fin |
 
 ## Où est quoi — `main.js`
 
-L'en-tête du fichier (lignes 1 à 77) contient déjà le résumé de tout le projet. À lire en
-premier quand on découvre le code.
+L'en-tête du fichier (lignes 1 à 79) résume déjà tout le projet, classe par
+classe. À lire en premier quand on découvre le code.
 
-| Ligne | Quoi |
-| --- | --- |
-| 86 | `etat` — l'état de la partie |
-| 89 | `record` — relu depuis le navigateur |
-| 97 | `afficherTout` — redessine les quatre morceaux de la page |
-| 111 | `surPosePiece` — appelée quand le joueur lâche une pièce |
-| 136 | `surBasculeCase` — clic en mode debug |
-| 145 | `surRejouer` — bouton Rejouer |
-| 155 | `surChoixTheme` — choix d'un thème |
-| 165 et suivantes | Le démarrage : thème, écouteurs, premier affichage |
+| Ligne | Quoi | Fait quoi |
+| --- | --- | --- |
+| 84 | **`class Jeu`** | Crée la partie et les vues, et réagit aux actions du joueur |
+| 88 | `constructor()` | Le démarrage : thème, partie, vues, et les fonctions données à chaque vue |
+| 119 | `afficherTout()` | Redessine toute la page |
+| 133 | `surPosePiece()` | Le joueur a lâché une pièce |
+| 159 | `surBasculeCase()` | Clic en mode debug |
+| 168 | `surRejouer()` | Bouton Rejouer |
+| 178 | `surChoixTheme()` | Choix d'un thème |
+| 185 | `Jeu.TAILLE_GRILLE` | Côté de la grille, et noms sous lesquels le navigateur retient record et thème |
+| 196 | `const jeu = new Jeu()` | Le démarrage, et le seul nom global de tout le projet |
 
 ## Le chemin d'un coup, de bout en bout
 
@@ -130,28 +125,26 @@ premier quand on découvre le code.
 le joueur lâche une pièce sur la grille
         |
         v
-display.js  surLacher()                     l'écouteur posé sur #grille
-        |                                   retrouve la case et la pièce
-        v
-display.js  origineDeLaPose()               position du curseur -> coin de la forme
+GlisserDeposer.gererLacher()            l'écouteur posé sur #grille retrouve la case et la pièce
         |
         v
-main.js     surPosePiece(id, ligne, colonne)
+GlisserDeposer.calculerOrigine()        position du curseur -> coin de la forme
         |
-        +-- lignesCasseesPar()              AVANT la pose, pour l'animation
+        v
+Jeu.surPosePiece(id, ligne, colonne)    la fonction que le jeu a donnée au glisser-déposer
         |
-        +-- poserPiece()                    renvoie un NOUVEL état
+        +-- partie.grille.lignesCasseesPar()    AVANT la pose, pour l'animation
+        |
+        +-- partie.poserPiece()                 modifie la partie, renvoie false si impossible
         |        |
-        |        +-- peutPoser()            pose valide ?
-        |        +-- grilleAvecForme()      dessine la pièce
-        |        +-- supprimerLignesPleines()   vide, compte, monte le combo
-        |        +-- tirerLotPosable()      seulement si la réserve est vide
+        |        +-- grille.peutPoser()                 pose valide ?
+        |        +-- grille.poserForme()                dessine la pièce
+        |        +-- partie.supprimerLignesPleines()    vide, compte avec Bareme, monte le combo
+        |        +-- Tirage.tirerLot()                  seulement si la réserve est vide
         |
-        +-- etat = ce nouvel état
+        +-- jeu.afficherTout()                  VueGrille, VueScore et VueReserve redessinent
         |
-        +-- afficherTout()                  redessine tout
-        |
-        +-- animerLignesCassees()           fait clignoter
+        +-- vueGrille.animer()                  fait clignoter
 ```
 
 ## Je veux modifier quelque chose, je vais où
@@ -159,13 +152,14 @@ main.js     surPosePiece(id, ligne, colonne)
 | Je veux... | Fichier | Endroit |
 | --- | --- | --- |
 | Ajouter ou retirer une forme | `game_logic.js` | `Forme.TOUTES`, ligne 88 |
-| Changer le barème de points | `game_logic.js` | lignes 371-376 et `pointsDeSuppression` |
-| Changer la taille de la grille | `main.js` | `TAILLE_GRILLE`, ligne 79 |
-| Ajouter un thème ou une couleur | `display.js` | `themes`, ligne 18 — rien d'autre à toucher |
-| Changer la taille des cases | `display.js` | `TAILLE_CASE`, ligne 87 |
-| Changer la fréquence des grosses formes | `game_logic.js` | `POIDS_GROSSE_FORME`, ligne 416 |
+| Changer le barème de points | `game_logic.js` | `Bareme.POINTS_PAR_LIGNE` et suivantes, ligne 408 |
+| Changer la taille de la grille | `main.js` | `Jeu.TAILLE_GRILLE`, ligne 185 |
+| Ajouter un thème ou une couleur | `display.js` | `Themes.LISTE`, ligne 76 — rien d'autre à toucher |
+| Changer la taille des cases | `display.js` | `VueGrille.TAILLE_CASE`, ligne 255 |
+| Changer la fréquence des grosses formes | `game_logic.js` | `Tirage.POIDS_GROSSE_FORME`, ligne 565 |
 | Changer l'animation de suppression | `style.css` | `@keyframes eclair-suppression` |
-| Changer le mot du mode debug | `display.js` | `CODE_DEBUG`, ligne 351 |
+| Changer le mot du mode debug | `display.js` | `ModeDebug.CODE`, ligne 436 |
+| Réagir à une nouvelle action du joueur | `main.js` et `display.js` | Une méthode `sur...` dans `Jeu`, passée à la vue concernée dans le constructeur |
 | Ajouter un test | `test/game_logic.test.js` | puis `npm test` |
 
 ---
@@ -179,30 +173,30 @@ grille de 8 par 8, trois pièces proposées à la fois, qu'on place sans pouvoir
 tourner. Chaque ligne ou colonne remplie disparaît et rapporte des points. La partie
 s'arrête quand plus aucune des trois pièces ne rentre.
 
-Le code est séparé en trois couches : les règles, l'affichage, et la liaison entre les
-deux. Les règles ne touchent jamais à la page, ce qui nous permet de les tester
-automatiquement avec Node. »
+Le code est organisé en douze classes, réparties en trois couches : les règles,
+l'affichage, et le jeu qui relie les deux. Les règles ne touchent jamais à la page, ce
+qui nous permet de les tester automatiquement avec Node. »
 
 ## Les cinq mécanismes à savoir expliquer
 
-**1. Le cycle action → état → affichage**
+**1. Douze classes, quatre sortes de messages**
 
-Il n'y a qu'un seul chemin possible : le joueur agit, une fonction des règles renvoie un
-nouvel état, on remplace la variable `etat`, et on redessine tout. On ne met jamais à
-jour un morceau de page directement.
+Les vues **préviennent** le jeu quand le joueur agit, en appelant une fonction que le jeu
+leur a donnée en les créant. Le jeu **modifie** la partie. Le jeu demande aux vues de
+**redessiner**. Et les vues **lisent** la partie pour se dessiner. Il n'existe aucun
+autre chemin : une vue ne modifie jamais la partie, et les règles ne connaissent pas la
+page.
 
-On redessine tout plutôt que de chercher ce qui a changé. Sur 64 cases c'est instantané,
-et c'est beaucoup plus simple à suivre.
+**2. Une partie qui se modifie, et un seul endroit qui la modifie**
 
-**2. L'état qu'on ne modifie jamais**
+`partie.poserPiece()` change la partie elle-même et renvoie `true` ou `false`. Pour que ça
+reste maîtrisé, une seule classe a le droit d'appeler les méthodes qui modifient la
+partie : `Jeu`. Si la partie se met un jour à changer de façon inattendue, il n'y a qu'un
+endroit où chercher.
 
-Aucune fonction des règles n'écrit dans l'objet qu'elle reçoit : elle en renvoie une
-copie modifiée, fabriquée par `etatAvec`.
-
-L'exemple concret à donner si on demande à quoi ça sert : avant de poser une pièce, on
-calcule quelles lignes vont sauter, pour pouvoir les faire clignoter après. Si
-`poserPiece` modifiait la grille sur place, la ligne serait déjà vide au moment de
-l'animation et il n'y aurait plus rien à faire clignoter.
+L'exemple concret à donner : avant de poser une pièce, le jeu calcule quelles lignes vont
+sauter, pour pouvoir les faire clignoter après. Il **doit** le faire avant : après la
+pose, les lignes sont déjà vides.
 
 **3. Le tirage garanti posable**
 
@@ -217,7 +211,7 @@ retire. Jusqu'à 40 fois.
 
 La vérification est une **recherche avec retour en arrière**. On prend une forme, on
 l'essaie à chaque endroit possible, et pour chaque endroit qui marche on recommence avec
-les formes restantes sur la grille obtenue. La fonction s'appelle elle-même avec une
+les formes restantes sur une copie de la grille. La fonction s'appelle elle-même avec une
 forme de moins, jusqu'à la liste vide qui est le cas gagnant. Si aucun essai n'aboutit,
 c'est perdu et on retire un lot.
 
@@ -240,40 +234,48 @@ dans le jeu original.
 
 **5. Les écouteurs posés sur la grille, pas sur les cases**
 
-`afficherGrille` recrée les 64 cases à chaque affichage. Des écouteurs posés dessus
-seraient perdus à chaque tour. On les pose donc une seule fois sur la grille elle-même,
-et le navigateur fait remonter l'événement de la case jusqu'à elle. Deux écouteurs au
-lieu de cent vingt-huit.
-
-C'est pour ça que `display.js` garde `etatAffiche` : les écouteurs sont branchés une fois
-pour toutes, mais ils ont besoin de lire l'état courant, qui change à chaque coup.
+`VueGrille` recrée les 64 cases à chaque affichage. Des écouteurs posés dessus seraient
+perdus à chaque tour. `GlisserDeposer` les pose donc une seule fois sur la grille
+elle-même, et le navigateur fait remonter l'événement de la case jusqu'à elle. Deux
+écouteurs au lieu de cent vingt-huit.
 
 ## Questions probables, et quoi répondre
 
+**« Pourquoi des classes ? »**
+Avant, le code comptait 51 fonctions et 22 variables globales. Il compte maintenant douze
+classes et un seul nom global, `jeu`. Chaque classe regroupe ce qui parle de la même
+chose : pour modifier le barème on va dans `Bareme`, pour l'aperçu dans `VueGrille`.
+
 **« Pourquoi trois fichiers ? »**
 Pour que les règles ne dépendent de rien. C'est ce qui permet de les charger dans Node et
-de les tester sans navigateur. Les 19 tests ne testent que `game_logic.js`.
+de les tester sans navigateur. Les 20 tests ne testent que `game_logic.js`.
+
+**« Pourquoi `Bareme`, `Tirage` et `Themes` n'ont que des méthodes `static` ? »**
+Parce qu'elles n'ont rien à retenir : un calcul de points ne dépend que de ce qu'on lui
+donne. On n'en crée jamais avec `new`, on écrit `Bareme.calculerPoints(...)`. La classe
+sert à ranger le calcul avec ses constantes.
+
+**« Pourquoi les constantes sont écrites après la classe ? »**
+La syntaxe `static X = ...` à l'intérieur de la classe est plus récente et n'est pas
+comprise par tous les navigateurs. C'est elle qui avait rendu la page blanche sous
+Firefox lors de la PR #7. On écrit donc `Bareme.POINTS_PAR_LIGNE = 30;` juste après la
+classe, ce qui marche partout.
 
 **« Cette recherche récursive, ce n'est pas trop lent ? »**
-On a mesuré sur des parties complètes : 1,3 milliseconde au 99e centile, 2 millisecondes
-au pire. La recherche s'arrête à la première solution trouvée, et deux pièces identiques
-d'un triplet ne sont essayées qu'une fois.
+On a mesuré sur environ 1 700 coups : 2 millisecondes au 99e centile, moins de 10 au pire,
+alors qu'un écran se rafraîchit toutes les 16. La recherche s'arrête à la première
+solution trouvée, et deux pièces identiques ne sont essayées qu'une fois.
 
 **« Que se passe-t-il si vous ajoutez une cinquième couleur ? »**
-On ajoute une nuance dans `themes`, et c'est tout. Le nombre de couleurs est déduit de la
-longueur de cette liste, et la couleur d'une case passe par une variable CSS — le CSS n'a
-donc pas besoin de connaître le nombre de couleurs.
-
-**« Pourquoi une variable CSS plutôt qu'une classe par couleur ? »**
-Avec une classe par couleur, il fallait maintenir la même information à trois endroits :
-le JavaScript, la liste des thèmes, et les règles CSS. Avec la variable, il n'y a plus
-qu'une source.
+On ajoute une nuance dans `Themes.LISTE`, et c'est tout. Le nombre de couleurs est déduit
+de la longueur de cette liste, et la couleur d'une case passe par une variable CSS — le
+CSS n'a donc pas besoin de connaître le nombre de couleurs.
 
 **« Comment testez-vous ? »**
-`npm test`, qui lance `node --test` sur `test/game_logic.test.js`. 19 tests : les formes,
-le placement, la suppression de ligne et de colonne, le barème, la montée et la retombée
-du combo, le fait que l'état n'est jamais modifié, et que le lot tiré est bien posable en
-entier.
+`npm test`, qui lance `node --test` sur `test/game_logic.test.js`. 20 tests : les formes,
+la grille (dont le fait qu'une copie est bien indépendante), le placement, la réserve, la
+suppression de ligne et de colonne, le barème, la montée et la retombée du combo, le lot
+tiré posable en entier, et la fin de partie.
 
 **« Le jeu marche sur téléphone ? »**
 Non, et c'est assumé. Le glisser-déposer HTML5 n'émet aucun événement tactile. Il
@@ -285,11 +287,12 @@ On tape `debug` n'importe où sur la page, et on peut alors remplir ou vider les
 clic. Ça sert à préparer une situation précise pour la tester, par exemple une ligne
 presque pleine.
 
-**« Pourquoi l'historique git est en désordre au début ? »**
-La branche `feature/game-foundations` a été réutilisée après avoir déjà été fusionnée, ce
-qui a fait apparaître le même travail deux fois. On ne l'a pas réécrit volontairement :
-l'historique est déjà partagé entre nous trois et les pull requests y font référence.
-La refonte, elle, a été faite en 22 commits qui ne changent qu'une chose chacun.
+**« Pourquoi l'historique git fait des allers-retours ? »**
+Deux fois. Au début, la branche `feature/game-foundations` a été réutilisée après avoir
+déjà été fusionnée, ce qui a fait apparaître le même travail deux fois. Et en octobre, la
+PR #7 a été fusionnée avant d'avoir été testée dans le navigateur : la #8 l'a annulée et
+la #9 l'a remise, corrigée. On ne réécrit pas l'historique partagé ; la leçon retenue,
+c'est d'ouvrir le jeu avant de fusionner.
 
 ## Les chiffres à avoir en tête
 
@@ -299,20 +302,21 @@ La refonte, elle, a été faite en 22 commits qui ne changent qu'une chose chacu
 | Formes | 41, rotations comprises |
 | Pièces par lot | 3 |
 | Thèmes | 4, de 4 nuances chacun |
+| Classes | 12, et un seul nom global (`jeu`) |
 | Essais de tirage maximum | 40 |
 | Barème | 30 × L! × min(combo + 1, 6 × L) |
-| Tests | 19, tous sur la logique pure |
-| Temps d'un coup | 1,3 ms au 99e centile |
-| Lignes de JavaScript | environ 1300, commentaires compris |
+| Tests | 20, tous sur la logique |
+| Temps d'un coup | 2 ms au 99e centile |
+| Lignes de JavaScript | 1478, commentaires compris |
 
 ## Ce qu'on assume comme limites
 
 - Pas de support tactile, donc injouable sur téléphone
 - Le bonus du jeu original quand la grille se vide entièrement n'est pas implémenté
 - Le barème est une approximation : les valeurs exactes du jeu original ne sont pas publiques
-- L'historique git des premières semaines est en désordre, et on a choisi de ne pas le réécrire
+- L'historique git contient deux allers-retours, qu'on a choisi de ne pas réécrire
 
 ---
 
 Pour le détail des mécanismes avec les schémas, voir `FONCTIONNEMENT.md`.
-Pour la carte des fonctions par fichier, l'en-tête de `main.js` la reprend aussi.
+Pour la carte des classes par fichier, l'en-tête de `main.js` la reprend aussi.
