@@ -230,10 +230,10 @@ class VueGrille {
         const grille = this.partieAffichee.grille;
         const valide = grille.peutPoser(forme, ligne, colonne);
 
-        for (const [l, c] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
+        for (const [ligneCase, colonneCase] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
             // une forme survolée près d'un bord déborde de la grille : trouverCase ne trouve alors aucune case, et il
             // n'y a rien à marquer pour cette partie de la forme
-            const element = this.trouverCase(l, c);
+            const element = this.trouverCase(ligneCase, colonneCase);
             if (element !== null) {
                 element.classList.add(valide ? "apercu-valide" : "apercu-invalide");
             }
@@ -508,8 +508,8 @@ class VueReserve {
                 // la forme ne remplit pas forcément tout son rectangle : on cherche si cette position en fait partie,
                 // et sinon la case reste transparente
                 let occupee = false;
-                for (const [l, c] of forme.cases) {
-                    if (l === ligne && c === colonne) occupee = true;
+                for (const [ligneForme, colonneForme] of forme.cases) {
+                    if (ligneForme === ligne && colonneForme === colonne) occupee = true;
                 }
                 if (occupee) VueGrille.colorerCase(petiteCase, piece.couleur);
 

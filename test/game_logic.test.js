@@ -68,7 +68,7 @@ test("aucune forme n'est définie deux fois", () => {
     for (const nom of Forme.listerNoms()) {
         const cases = Forme.trouverParNom(nom).cases;
         // on trie pour que deux définitions identiques écrites dans un ordre différent se ressemblent
-        const cle = cases.map((c) => c.join(",")).sort().join(" ");
+        const cle = cases.map((caseForme) => caseForme.join(",")).sort().join(" ");
         assert.equal(vues.get(cle), undefined, `${nom} est identique à ${vues.get(cle)}`);
         vues.set(cle, nom);
     }

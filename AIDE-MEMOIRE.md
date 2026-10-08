@@ -13,7 +13,7 @@ Les numéros de ligne correspondent à la branche `feature/classes`.
 
 | Fichier | Lignes | Classes | Rôle en une phrase |
 | --- | --- | --- | --- |
-| `game_logic.js` | 706 | 5 | Les règles. Ne touche jamais à la page. |
+| `game_logic.js` | 707 | 5 | Les règles. Ne touche jamais à la page. |
 | `display.js` | 592 | 6 | Tout ce qui écrit dans la page. Lit la partie, ne la modifie jamais. |
 | `main.js` | 196 | 1 | La classe `Jeu`, qui relie les deux autres. Le seul à modifier la partie. |
 | `index.html` | 54 | | La structure seule. Tous les conteneurs sont vides au départ. |
@@ -55,27 +55,27 @@ Un seul objet, `jeu.partie`, créé dans le constructeur de `Jeu` (`main.js` lig
 | 147 | **`class Grille`** | La grille de jeu : 0 = case vide, 1 à 4 = couleur de la pièce posée |
 | 190 | `copier()` | Une copie indépendante, pour faire un essai sans toucher à la vraie |
 | 221 | `peutPoser()` | Est-ce que cette forme rentre ici ? |
-| 236 | `peutPoserQuelquePart()` | Est-ce qu'elle rentre quelque part ? |
-| 253 | `poserForme()` | Dessine une forme sur la grille |
-| 287 | `chercherLignesPleines()` | Les index des lignes et colonnes entièrement occupées |
-| 305 | `viderLignes()` | Vide les lignes et colonnes indiquées |
-| 328 | `chercherLignesCasseesPar()` | Ce que cette pose ferait sauter, sans rien poser |
-| 347 | `simulerPose()` | La grille après une pose, sur une copie |
-| 377 | **`class Bareme`** | Le calcul des points. Que des méthodes `static` |
-| 398 | `Bareme.calculerPoints()` | Les points d'une suppression |
-| 408 | `Bareme.POINTS_PAR_LIGNE` | Les constantes du barème |
+| 237 | `peutPoserQuelquePart()` | Est-ce qu'elle rentre quelque part ? |
+| 254 | `poserForme()` | Dessine une forme sur la grille |
+| 288 | `chercherLignesPleines()` | Les index des lignes et colonnes entièrement occupées |
+| 306 | `viderLignes()` | Vide les lignes et colonnes indiquées |
+| 329 | `chercherLignesCasseesPar()` | Ce que cette pose ferait sauter, sans rien poser |
+| 348 | `simulerPose()` | La grille après une pose, sur une copie |
+| 378 | **`class Bareme`** | Le calcul des points. Que des méthodes `static` |
+| 399 | `Bareme.calculerPoints()` | Les points d'une suppression |
+| 409 | `Bareme.POINTS_PAR_LIGNE` | Les constantes du barème |
 | 421 | **`class Tirage`** | Le choix des pièces. Que des méthodes `static` |
-| 429 | `Tirage.construireSac()` | Le sac où les grosses formes sont en 5 exemplaires |
-| 493 | `Tirage.peutToutPoserDansUnOrdre()` | **La fonction récursive.** Vérifie qu'un lot est posable en entier |
-| 533 | `Tirage.tirerLot()` | Tire jusqu'à 40 lots et garde le premier qui passe la vérification |
-| 560 | `Tirage.CHANCE_TRIPLE_GRILLE_VIDE` | Les constantes du tirage |
-| 579 | **`class Partie`** | La partie en cours. Se modifie elle-même |
-| 585 | `constructor()` | Grille vide, score à zéro, premier lot |
-| 600 | `trouverPiece()` | Une pièce de la réserve, à partir de son identifiant |
-| 626 | `supprimerLignesPleines()` | Vide les lignes, ajoute les points, monte le combo |
-| 646 | `poserPiece()` | **Le cœur.** Pose, compte, nettoie, décide du combo, retire un lot. Renvoie `false` si impossible |
-| 678 | `estTerminee()` | Plus aucune pièce ne rentre nulle part |
-| 692 | `basculerCase()` | Remplit ou vide une case à la main (mode debug) |
+| 430 | `Tirage.construireSac()` | Le sac où les grosses formes sont en 5 exemplaires |
+| 494 | `Tirage.peutToutPoserDansUnOrdre()` | **La fonction récursive.** Vérifie qu'un lot est posable en entier |
+| 534 | `Tirage.tirerLot()` | Tire jusqu'à 40 lots et garde le premier qui passe la vérification |
+| 561 | `Tirage.CHANCE_TRIPLE_GRILLE_VIDE` | Les constantes du tirage |
+| 580 | **`class Partie`** | La partie en cours. Se modifie elle-même |
+| 586 | `constructor()` | Grille vide, score à zéro, premier lot |
+| 601 | `trouverPiece()` | Une pièce de la réserve, à partir de son identifiant |
+| 627 | `supprimerLignesPleines()` | Vide les lignes, ajoute les points, monte le combo |
+| 647 | `poserPiece()` | **Le cœur.** Pose, compte, nettoie, décide du combo, retire un lot. Renvoie `false` si impossible |
+| 679 | `estTerminee()` | Plus aucune pièce ne rentre nulle part |
+| 693 | `basculerCase()` | Remplit ou vide une case à la main (mode debug) |
 
 ## Où est quoi — `display.js`
 
@@ -152,11 +152,11 @@ Jeu.gererPosePiece(id, ligne, colonne)    la fonction que le jeu a donnée au gl
 | Je veux... | Fichier | Endroit |
 | --- | --- | --- |
 | Ajouter ou retirer une forme | `game_logic.js` | `Forme.TOUTES`, ligne 88 |
-| Changer le barème de points | `game_logic.js` | `Bareme.POINTS_PAR_LIGNE` et suivantes, ligne 408 |
+| Changer le barème de points | `game_logic.js` | `Bareme.POINTS_PAR_LIGNE` et suivantes, ligne 409 |
 | Changer la taille de la grille | `main.js` | `Jeu.TAILLE_GRILLE`, ligne 185 |
 | Ajouter un thème ou une couleur | `display.js` | `Themes.LISTE`, ligne 76 — rien d'autre à toucher |
 | Changer la taille des cases | `display.js` | `VueGrille.TAILLE_CASE`, ligne 271 |
-| Changer la fréquence des grosses formes | `game_logic.js` | `Tirage.POIDS_GROSSE_FORME`, ligne 565 |
+| Changer la fréquence des grosses formes | `game_logic.js` | `Tirage.POIDS_GROSSE_FORME`, ligne 566 |
 | Changer l'animation de suppression | `style.css` | `@keyframes eclair-suppression` |
 | Changer le mot du mode debug | `display.js` | `ModeDebug.CODE`, ligne 452 |
 | Réagir à une nouvelle action du joueur | `main.js` et `display.js` | Une méthode `gerer...` dans `Jeu`, passée à la vue concernée dans le constructeur |
@@ -307,7 +307,7 @@ c'est d'ouvrir le jeu avant de fusionner.
 | Barème | 30 × L! × min(combo + 1, 6 × L) |
 | Tests | 20, tous sur la logique |
 | Temps d'un coup | 2 ms au 99e centile |
-| Lignes de JavaScript | 1494, commentaires compris |
+| Lignes de JavaScript | 1495, commentaires compris |
 
 ## Ce qu'on assume comme limites
 

@@ -219,11 +219,12 @@ class Grille {
      * :return: true si toutes les cases de la forme sont dans la grille et vides, sinon false
      */
     peutPoser(forme, ligne, colonne) {
-        for (const [l, c] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
+        for (const [ligneCase, colonneCase] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
             // la case sort de la grille
-            if (l < 0 || l >= this.taille || c < 0 || c >= this.taille) return false;
+            if (ligneCase < 0 || ligneCase >= this.taille) return false;
+            if (colonneCase < 0 || colonneCase >= this.taille) return false;
             // la case est déjà occupée
-            if (this.lireCase(l, c) !== 0) return false;
+            if (this.lireCase(ligneCase, colonneCase) !== 0) return false;
         }
         return true;
     }
@@ -251,8 +252,8 @@ class Grille {
      * :return: rien, la grille est modifiée
      */
     poserForme(forme, ligne, colonne, valeur) {
-        for (const [l, c] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
-            this.ecrireCase(l, c, valeur);
+        for (const [ligneCase, colonneCase] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
+            this.ecrireCase(ligneCase, colonneCase, valeur);
         }
     }
 
@@ -377,14 +378,14 @@ class Grille {
 class Bareme {
     /**
      * calcule la factorielle d'un nombre => 4! = 1 x 2 x 3 x 4 = 24
-     * :param n: le nombre de départ
-     * :return: le produit de tous les entiers de 1 à n
+     * :param nombre: le nombre de départ
+     * :return: le produit de tous les entiers de 1 à nombre
      */
-    static calculerFactorielle(n) {
+    static calculerFactorielle(nombre) {
         let resultat = 1;
 
-        for (let i = 2; i <= n; i++) {
-            resultat *= i;
+        for (let facteur = 2; facteur <= nombre; facteur++) {
+            resultat *= facteur;
         }
         return resultat;
     }
@@ -431,7 +432,7 @@ class Tirage {
 
         for (const forme of formes) {
             const exemplaires = Tirage.GROSSES_FORMES.includes(forme) ? Tirage.POIDS_GROSSE_FORME : 1;
-            for (let i = 0; i < exemplaires; i++) {
+            for (let exemplaire = 0; exemplaire < exemplaires; exemplaire++) {
                 sac.push(forme);
             }
         }
@@ -463,7 +464,7 @@ class Tirage {
         }
 
         const pieces = [];
-        for (let i = 0; i < nombre; i++) {
+        for (let rang = 0; rang < nombre; rang++) {
             pieces.push({
                 id: `piece-${Tirage.prochainNumero}`,
                 forme: formeCommune !== null ? formeCommune : Tirage.tirerAuHasard(sac),
