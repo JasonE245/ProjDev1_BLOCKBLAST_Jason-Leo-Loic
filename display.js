@@ -214,7 +214,7 @@ class VueGrille {
         const grille = this.partieAffichee.grille;
         const valide = grille.peutPoser(forme, ligne, colonne);
 
-        for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
+        for (const [l, c] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
             // une forme survolée près d'un bord déborde de la grille : trouverCase ne trouve alors aucune case, et il
             // n'y a rien à marquer pour cette partie de la forme
             const element = this.trouverCase(l, c);
@@ -306,7 +306,7 @@ class GlisserDeposer {
      * :return: un objet {ligne, colonne}, éventuellement hors de la grille
      */
     calculerOrigine(forme, element, evenement) {
-        const taille = Forme.parNom(forme).taille();
+        const taille = Forme.trouverParNom(forme).calculerTaille();
 
         // position du curseur en nombre de cases, virgule comprise
         const ligneCurseur = Number(element.dataset.ligne) + evenement.offsetY / VueGrille.TAILLE_CASE;
@@ -474,8 +474,8 @@ class VueReserve {
      * :return: l'élément de la page
      */
     creerElementPiece(piece) {
-        const forme = Forme.parNom(piece.forme);
-        const taille = forme.taille();
+        const forme = Forme.trouverParNom(piece.forme);
+        const taille = forme.calculerTaille();
 
         const element = document.createElement("div");
         element.className = "piece";

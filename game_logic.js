@@ -17,7 +17,7 @@
 // les tailles sont notées lignes x colonnes, comme les coordonnées
 //
 // les pièces et l'état du jeu ne retiennent que le nom de la forme (une simple chaîne) : on retrouve l'objet Forme
-// correspondant avec Forme.parNom()
+// correspondant avec Forme.trouverParNom()
 class Forme {
     /**
      * :param cases: liste de couples [ligne, colonne] relatifs au coin haut-gauche de la forme
@@ -38,7 +38,7 @@ class Forme {
      * comme toute forme touche la ligne 0 et la colonne 0, le plus grand indice suffit
      * :return: un objet {lignes, colonnes}
      */
-    taille() {
+    calculerTaille() {
         let maxLigne = 0;
         let maxColonne = 0;
 
@@ -56,7 +56,7 @@ class Forme {
      * :param colonne: colonne du coin haut-gauche de la forme
      * :return: liste de couples [ligne, colonne] en coordonnées de la grille
      */
-    casesPosees(ligne, colonne) {
+    calculerCasesPosees(ligne, colonne) {
         const cases = [];
 
         // chaque case de la forme est décalée du coin haut-gauche où on la pose
@@ -71,14 +71,14 @@ class Forme {
      * :param nom: nom de la forme, tel qu'il apparaît dans Forme.TOUTES
      * :return: l'objet Forme correspondant
      */
-    static parNom(nom) {
+    static trouverParNom(nom) {
         return Forme.TOUTES[nom];
     }
 
     /**
      * :return: la liste des noms de toutes les formes
      */
-    static noms() {
+    static listerNoms() {
         return Object.keys(Forme.TOUTES);
     }
 }
@@ -219,7 +219,7 @@ class Grille {
      * :return: true si toutes les cases de la forme sont dans la grille et vides, sinon false
      */
     peutPoser(forme, ligne, colonne) {
-        for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
+        for (const [l, c] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
             // la case sort de la grille
             if (l < 0 || l >= this.taille || c < 0 || c >= this.taille) return false;
             // la case est déjà occupée
@@ -251,7 +251,7 @@ class Grille {
      * :return: rien, la grille est modifiée
      */
     poserForme(forme, ligne, colonne, valeur) {
-        for (const [l, c] of Forme.parNom(forme).casesPosees(ligne, colonne)) {
+        for (const [l, c] of Forme.trouverParNom(forme).calculerCasesPosees(ligne, colonne)) {
             this.ecrireCase(l, c, valeur);
         }
     }
@@ -534,11 +534,11 @@ class Tirage {
         // formes qui rentrent encore quelque part, calculées une seule fois puisque la grille ne change pas entre
         // deux essais
         const posables = [];
-        for (const forme of Forme.noms()) {
+        for (const forme of Forme.listerNoms()) {
             if (grille.peutPoserQuelquePart(forme)) posables.push(forme);
         }
 
-        const sac = Tirage.construireSac(posables.length > 0 ? posables : Forme.noms());
+        const sac = Tirage.construireSac(posables.length > 0 ? posables : Forme.listerNoms());
         const chanceTriple = grille.estVide() ? Tirage.CHANCE_TRIPLE_GRILLE_VIDE : Tirage.CHANCE_TRIPLE_EN_JEU;
 
         let pieces;
@@ -653,7 +653,7 @@ class Partie {
         //    on écrit couleur + 1 parce que 0 est réservé aux cases vides
         this.grille.poserForme(piece.forme, ligne, colonne, piece.couleur + 1);
         this.retirerPiece(idPiece);
-        this.score += Forme.parNom(piece.forme).nbCases;
+        this.score += Forme.trouverParNom(piece.forme).nbCases;
 
         // 2. les lignes et colonnes devenues pleines sautent et rapportent leurs points
         this.supprimerLignesPleines();

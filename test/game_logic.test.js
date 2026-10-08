@@ -48,8 +48,8 @@ function grilleLignePresquePleine() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 test("toute forme touche la ligne 0 et la colonne 0", () => {
-    for (const nom of Forme.noms()) {
-        const cases = Forme.parNom(nom).cases;
+    for (const nom of Forme.listerNoms()) {
+        const cases = Forme.trouverParNom(nom).cases;
         let minLigne = 99;
         let minColonne = 99;
 
@@ -65,8 +65,8 @@ test("toute forme touche la ligne 0 et la colonne 0", () => {
 test("aucune forme n'est définie deux fois", () => {
     const vues = new Map();
 
-    for (const nom of Forme.noms()) {
-        const cases = Forme.parNom(nom).cases;
+    for (const nom of Forme.listerNoms()) {
+        const cases = Forme.trouverParNom(nom).cases;
         // on trie pour que deux définitions identiques écrites dans un ordre différent se ressemblent
         const cle = cases.map((c) => c.join(",")).sort().join(" ");
         assert.equal(vues.get(cle), undefined, `${nom} est identique à ${vues.get(cle)}`);
@@ -76,15 +76,15 @@ test("aucune forme n'est définie deux fois", () => {
 
 test("les grosses formes existent bien", () => {
     for (const nom of Tirage.GROSSES_FORMES) {
-        assert.ok(Forme.parNom(nom), `forme inconnue : ${nom}`);
+        assert.ok(Forme.trouverParNom(nom), `forme inconnue : ${nom}`);
     }
 });
 
 test("taille() donne les dimensions en lignes et colonnes", () => {
-    assert.deepEqual(Forme.parNom("bloc").taille(), { lignes: 1, colonnes: 1 });
-    assert.deepEqual(Forme.parNom("ligne5_h").taille(), { lignes: 1, colonnes: 5 });
-    assert.deepEqual(Forme.parNom("rect_2x3").taille(), { lignes: 2, colonnes: 3 });
-    assert.deepEqual(Forme.parNom("rect_3x2").taille(), { lignes: 3, colonnes: 2 });
+    assert.deepEqual(Forme.trouverParNom("bloc").calculerTaille(), { lignes: 1, colonnes: 1 });
+    assert.deepEqual(Forme.trouverParNom("ligne5_h").calculerTaille(), { lignes: 1, colonnes: 5 });
+    assert.deepEqual(Forme.trouverParNom("rect_2x3").calculerTaille(), { lignes: 2, colonnes: 3 });
+    assert.deepEqual(Forme.trouverParNom("rect_3x2").calculerTaille(), { lignes: 3, colonnes: 2 });
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -48,9 +48,9 @@ Un seul objet, `jeu.partie`, créé dans le constructeur de `Jeu` (`main.js` lig
 | Ligne | Quoi | Fait quoi |
 | --- | --- | --- |
 | 21 | **`class Forme`** | Une forme de pièce, décrite par ses cases en `[ligne, colonne]` |
-| 41 | `taille()` | Le rectangle qui contient la forme, en lignes et colonnes |
-| 59 | `casesPosees()` | Les cases occupées par la forme posée à tel endroit |
-| 74 | `Forme.parNom()` | Retrouve une forme à partir de son nom |
+| 41 | `calculerTaille()` | Le rectangle qui contient la forme, en lignes et colonnes |
+| 59 | `calculerCasesPosees()` | Les cases occupées par la forme posée à tel endroit |
+| 74 | `Forme.trouverParNom()` | Retrouve une forme à partir de son nom |
 | 88 | `Forme.TOUTES` | Le catalogue des 41 formes |
 | 147 | **`class Grille`** | La grille de jeu : 0 = case vide, 1 à 4 = couleur de la pièce posée |
 | 190 | `copier()` | Une copie indépendante, pour faire un essai sans toucher à la vraie |
