@@ -411,7 +411,7 @@ class ModeDebug {
 ModeDebug.CODE = "debug";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// réserve de pièces, score et fin de partie
+// réserve de pièces
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -491,32 +491,53 @@ function afficherReserve(etat) {
     }
 }
 
-/**
- * met à jour le score, le record et le combo
- * :param etat: l'état du jeu
- * :param record: meilleur score connu, relu depuis le navigateur
- * :return: rien, les textes sont mis à jour
- */
-function afficherScore(etat, record) {
-    document.getElementById("score").textContent = `Score : ${etat.score}`;
-    document.getElementById("record").textContent = `Record : ${record}`;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// score et fin de partie
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // le combo n'est affiché qu'à partir de 2 suppressions d'affilée, quand il rapporte vraiment
-    const elementCombo = document.getElementById("combo");
-    elementCombo.textContent = `Combo x${etat.combo}`;
-    elementCombo.classList.toggle("visible", etat.combo > 1);
-}
+// l'affichage du score, du record et du combo, et l'écran de fin de partie avec son bouton "Rejouer"
+class VueScore {
+    /**
+     * retrouve les éléments de la page et branche le bouton "Rejouer"
+     * les éléments sont cherchés une seule fois : ils restent les mêmes pendant tout le jeu
+     * :param surRejouer: fonction appelée quand le joueur clique sur "Rejouer"
+     */
+    constructor(surRejouer) {
+        this.elementScore = document.getElementById("score");
+        this.elementRecord = document.getElementById("record");
+        this.elementCombo = document.getElementById("combo");
+        this.ecranFin = document.getElementById("fin-de-partie");
+        this.elementScoreFinal = document.getElementById("score-final");
 
-/**
- * affiche ou cache l'écran de fin de partie
- * :param etat: l'état du jeu
- * :return: rien
- */
-function afficherFinDePartie(etat) {
-    const perdu = etat.estTerminee();
-    document.getElementById("fin-de-partie").classList.toggle("ouvert", perdu);
+        document.getElementById("bouton-rejouer").addEventListener("click", surRejouer);
+    }
 
-    if (perdu) {
-        document.getElementById("score-final").textContent = etat.score;
+    /**
+     * met à jour le score, le record et le combo
+     * :param partie: la partie en cours
+     * :param record: meilleur score connu, relu depuis le navigateur
+     * :return: rien, les textes sont mis à jour
+     */
+    afficher(partie, record) {
+        this.elementScore.textContent = `Score : ${partie.score}`;
+        this.elementRecord.textContent = `Record : ${record}`;
+
+        // le combo n'est affiché qu'à partir de 2 suppressions d'affilée, quand il rapporte vraiment
+        this.elementCombo.textContent = `Combo x${partie.combo}`;
+        this.elementCombo.classList.toggle("visible", partie.combo > 1);
+    }
+
+    /**
+     * affiche ou cache l'écran de fin de partie
+     * :param partie: la partie en cours
+     * :return: rien
+     */
+    afficherFin(partie) {
+        const perdu = partie.estTerminee();
+        this.ecranFin.classList.toggle("ouvert", perdu);
+
+        if (perdu) {
+            this.elementScoreFinal.textContent = partie.score;
+        }
     }
 }

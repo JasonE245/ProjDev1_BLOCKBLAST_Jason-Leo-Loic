@@ -96,9 +96,9 @@ let record = Number(localStorage.getItem(CLE_RECORD)) || 0;
  */
 function afficherTout() {
     afficherGrille(partie);
-    afficherScore(partie, record);
+    vueScore.afficher(partie, record);
     afficherReserve(partie);
-    afficherFinDePartie(partie);
+    vueScore.afficherFin(partie);
 }
 
 /**
@@ -167,6 +167,6 @@ Themes.appliquer(Themes.trouverParNom(localStorage.getItem(CLE_THEME)));
 Themes.afficherChoix(surChoixTheme);
 initInteractionsGrille(surPosePiece);
 new ModeDebug(surBasculeCase);
-document.getElementById("bouton-rejouer").addEventListener("click", surRejouer);
+const vueScore = new VueScore(surRejouer);
 
 afficherTout();
