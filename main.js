@@ -5,73 +5,77 @@
 // dernière modif: 10.09.2026
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
-Ce fichier relie la logique du jeu à son affichage. C'est le seul endroit où la variable etat est remplacée, et le
-seul endroit qui écrit dans la mémoire du navigateur.
+Ce fichier crée le jeu et relie la logique à l'affichage. La classe Jeu est la seule qui modifie la partie, et la
+seule qui écrit dans la mémoire du navigateur.
 
 Le programme tourne toujours de la même façon :
 
-        le joueur fait quelque chose
+        le joueur fait quelque chose sur la page
                     |
                     v
-        une fonction de game_logic.js renvoie un NOUVEL état
+        une vue de display.js prévient le jeu, en appelant la fonction qu'il lui a donnée
                     |
                     v
-        etat = ce nouvel état
+        le jeu modifie la partie (game_logic.js)
                     |
                     v
-        afficherTout() redessine la page à partir de etat
+        afficherTout() redessine la page à partir de la partie
 
 -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 game_logic.js contient les règles du jeu :
 
-fonctions principales:
-~~~~~~~~~~~~~~~~~~~~~~
+classes:
+~~~~~~~~
 
-creerEtatInitial(taille, nbCouleurs):
-    - fabrique l'état de départ d'une partie, grille vide et premier lot de pièces
+Forme:
+    - une forme de pièce, décrite par ses cases en coordonnées [ligne, colonne]
+    - le catalogue des 41 formes est rangé dans Forme.TOUTES
 
-poserPiece(etat, idPiece, ligne, colonne):
-    - pose la pièce, compte les points, supprime les lignes pleines, gère le combo
-    - tire un nouveau lot quand les trois pièces ont été posées
-    - renvoie l'état inchangé si la pose est impossible
+Grille:
+    - la grille de jeu : poser une forme, dire si une pièce rentre, chercher et vider les lignes pleines
 
-lignesCasseesPar(grille, forme, ligne, colonne):
-    - dit quelles lignes et colonnes sauteraient si on posait la forme ici, sans rien poser
+Bareme:
+    - le calcul des points d'une suppression, selon le nombre de lignes cassées et le combo
 
-partieTerminee(etat):
-    - dit si aucune des pièces proposées ne rentre nulle part
+Tirage:
+    - le choix des pièces proposées, toujours posables toutes ensemble
 
-basculerCase(etat, ligne, colonne):
-    - remplit ou vide une case à la main, pour le mode debug
+Partie:
+    - la partie en cours : grille, score, combo et pièces de la réserve
+    - poserPiece() applique toutes les conséquences d'un coup, et renvoie false si la pose est impossible
 
 -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 display.js contient tout ce qui touche à la page :
 
-fonctions principales:
-~~~~~~~~~~~~~~~~~~~~~~
+classes:
+~~~~~~~~
 
-afficherGrille(etat) / afficherReserve(etat) / afficherScore(etat, record) / afficherFinDePartie(etat):
-    - redessinent chacun un morceau de la page à partir de l'état
+Themes:
+    - les quatre thèmes de couleurs, et le panneau pour les choisir
 
-initInteractionsGrille(surPose, surBascule):
-    - branche le glisser-déposer et le clic du mode debug, une seule fois au démarrage
+VueGrille:
+    - dessine la grille, l'aperçu pendant le glisser-déposer, et fait clignoter les lignes qui sautent
 
-animerLignesCassees(etat, cassees):
-    - fait clignoter les lignes qui viennent de sauter
+GlisserDeposer:
+    - suit la pièce glissée, et prévient le jeu quand elle est lâchée sur la grille
 
-appliquerTheme(theme) / afficherChoixTheme(surChoix):
-    - gèrent les quatre thèmes de couleurs
+VueReserve:
+    - dessine les pièces proposées, prêtes à être glissées
+
+VueScore:
+    - affiche le score, le record, le combo et l'écran de fin de partie
+
+ModeDebug:
+    - taper "debug" sur la page, puis cliquer les cases pour les remplir ou les vider
 
 -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
-variables de ce fichier:
-~~~~~~~~~~~~~~~~~~~~~~~~~
+ce fichier:
+~~~~~~~~~~~
 
-etat:
-    - l'état complet du jeu : grille, score, combo, pièces de la réserve
-    - n'est jamais modifié sur place, toujours remplacé par un nouvel état
-
-record:
-    - meilleur score du joueur, conservé d'une partie à l'autre dans la mémoire du navigateur
+Jeu:
+    - crée la partie et les vues, et réagit aux actions du joueur
+    - partie : la partie en cours, remplacée par une nouvelle quand le joueur clique sur "Rejouer"
+    - record : meilleur score du joueur, conservé d'une partie à l'autre dans la mémoire du navigateur
 */
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
