@@ -20,7 +20,7 @@ const { Forme, Grille, Bareme, Tirage, Partie } = require("../game_logic.js");
  * :param extra: champs supplémentaires à remplacer, par exemple le combo
  * :return: une Partie prête à jouer
  */
-function partieDeTest(grille, pieces, extra = {}) {
+function creerPartieDeTest(grille, pieces, extra = {}) {
     const partie = new Partie(grille.taille);
     partie.grille = grille;
     partie.pieces = pieces;
@@ -34,7 +34,7 @@ function partieDeTest(grille, pieces, extra = {}) {
  * fabrique une grille dont la première ligne est pleine sauf sa dernière case
  * :return: une grille 8x8
  */
-function grilleLignePresquePleine() {
+function creerGrilleLignePresquePleine() {
     const grille = new Grille(8);
 
     for (let colonne = 0; colonne < 7; colonne++) {
@@ -137,14 +137,14 @@ test("chercherLignesCasseesPar ne renvoie rien si la pose est impossible", () =>
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 test("poser une pièce rapporte un point par case", () => {
-    const partie = partieDeTest(new Grille(8), [{ id: "p1", forme: "carre_2x2", couleur: 0 }]);
+    const partie = creerPartieDeTest(new Grille(8), [{ id: "p1", forme: "carre_2x2", couleur: 0 }]);
 
     assert.equal(partie.poserPiece("p1", 0, 0), true);
     assert.equal(partie.score, 4);
 });
 
 test("une pièce posée quitte la réserve", () => {
-    const partie = partieDeTest(new Grille(8), [
+    const partie = creerPartieDeTest(new Grille(8), [
         { id: "p1", forme: "bloc", couleur: 0 },
         { id: "p2", forme: "bloc", couleur: 0 },
     ]);
@@ -156,7 +156,7 @@ test("une pièce posée quitte la réserve", () => {
 });
 
 test("compléter une ligne la vide et rapporte les points de suppression", () => {
-    const partie = partieDeTest(grilleLignePresquePleine(), [{ id: "p1", forme: "bloc", couleur: 0 }]);
+    const partie = creerPartieDeTest(creerGrilleLignePresquePleine(), [{ id: "p1", forme: "bloc", couleur: 0 }]);
     partie.poserPiece("p1", 0, 7);
 
     for (let colonne = 0; colonne < 8; colonne++) {
@@ -167,7 +167,7 @@ test("compléter une ligne la vide et rapporte les points de suppression", () =>
 });
 
 test("une pose impossible ne change rien à la partie", () => {
-    const partie = partieDeTest(new Grille(8), [{ id: "p1", forme: "ligne5_h", couleur: 0 }]);
+    const partie = creerPartieDeTest(new Grille(8), [{ id: "p1", forme: "ligne5_h", couleur: 0 }]);
     const avant = JSON.stringify(partie);
 
     assert.equal(partie.poserPiece("p1", 0, 6), false, "la pièce dépasse de la grille");
@@ -180,7 +180,7 @@ test("une pose impossible ne change rien à la partie", () => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 test("le combo retombe à zéro si aucune pièce du lot n'a cassé de ligne", () => {
-    const partie = partieDeTest(new Grille(8), [{ id: "p1", forme: "bloc", couleur: 0 }], {
+    const partie = creerPartieDeTest(new Grille(8), [{ id: "p1", forme: "bloc", couleur: 0 }], {
         combo: 3,
         ligneCasseeDansLeLot: false,
     });
@@ -191,7 +191,7 @@ test("le combo retombe à zéro si aucune pièce du lot n'a cassé de ligne", ()
 });
 
 test("le combo tient si une pièce du lot a cassé une ligne", () => {
-    const partie = partieDeTest(grilleLignePresquePleine(), [
+    const partie = creerPartieDeTest(creerGrilleLignePresquePleine(), [
         { id: "p1", forme: "bloc", couleur: 0 },
         { id: "p2", forme: "bloc", couleur: 0 },
     ]);
@@ -247,12 +247,12 @@ test("la partie est finie quand plus aucune pièce ne rentre", () => {
     }
     pleine.ecrireCase(0, 0, 0);
 
-    assert.equal(partieDeTest(pleine, [{ id: "p1", forme: "carre_2x2", couleur: 0 }]).estTerminee(), true);
-    assert.equal(partieDeTest(pleine.copier(), [{ id: "p1", forme: "bloc", couleur: 0 }]).estTerminee(), false);
+    assert.equal(creerPartieDeTest(pleine, [{ id: "p1", forme: "carre_2x2", couleur: 0 }]).estTerminee(), true);
+    assert.equal(creerPartieDeTest(pleine.copier(), [{ id: "p1", forme: "bloc", couleur: 0 }]).estTerminee(), false);
 });
 
 test("basculerCase remplit puis vide une case", () => {
-    const partie = partieDeTest(new Grille(8), []);
+    const partie = creerPartieDeTest(new Grille(8), []);
 
     partie.basculerCase(2, 3);
     assert.equal(partie.grille.lireCase(2, 3), 1);
