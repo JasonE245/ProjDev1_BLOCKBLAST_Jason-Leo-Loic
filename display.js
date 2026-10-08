@@ -286,15 +286,13 @@ function origineDeLaPose(forme, element, evenement) {
  * vingt-huit, et surtout rien à rebrancher après un affichage, puisque la grille survit alors que les cases sont
  * recréées à chaque tour
  * :param surPose: fonction appelée avec (idPiece, ligne, colonne) quand le joueur lâche une pièce
- * :param surBascule: fonction appelée avec (ligne, colonne) quand le joueur clique une case en mode debug
  * :return: rien, les écouteurs sont en place
  */
-function initInteractionsGrille(surPose, surBascule) {
+function initInteractionsGrille(surPose) {
     const conteneur = document.getElementById("grille");
 
     conteneur.addEventListener("dragover", surSurvolGlisser);
     conteneur.addEventListener("drop", (evenement) => surLacher(evenement, surPose));
-    conteneur.addEventListener("click", (evenement) => surClicDebug(evenement, surBascule));
 }
 
 /**
@@ -347,44 +345,70 @@ function surLacher(evenement, surPose) {
     surPose(cible.piece.id, origine.ligne, origine.colonne);
 }
 
-/**
- * prévient la couche de contrôle quand le joueur clique une case, en mode debug uniquement
- * :param evenement: l'événement click
- * :param surBascule: fonction à appeler avec (ligne, colonne)
- * :return: rien
- */
-function surClicDebug(evenement, surBascule) {
-    if (!document.body.classList.contains("mode-debug")) return;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// mode debug
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    const element = evenement.target.closest(".case");
-    if (element === null) return;
+// le mode debug : taper "debug" n'importe où sur la page l'active ou le désactive, et tant qu'il est actif, cliquer une
+// case de la grille la remplit ou la vide. Sert à préparer une situation précise pour la tester.
+class ModeDebug {
+    /**
+     * branche le clavier et le clic sur la grille
+     * :param surBascule: fonction appelée avec (ligne, colonne) quand le joueur clique une case en mode debug
+     */
+    constructor(surBascule) {
+        this.surBascule = surBascule;
+        // dernières lettres tapées, autant qu'il y en a dans le mot à taper
+        this.touchesTapees = "";
 
-    surBascule(Number(element.dataset.ligne), Number(element.dataset.colonne));
-}
+        // les fonctions fléchées gardent "this" : sans elles, this désignerait la page ou la grille, et non le mode
+        // debug, au moment où l'événement arrive
+        document.addEventListener("keydown", (evenement) => this.gererTouche(evenement));
+        document.getElementById("grille").addEventListener("click", (evenement) => this.gererClic(evenement));
+    }
 
-// mot à taper n'importe où sur la page pour activer ou désactiver le mode debug
-const CODE_DEBUG = "debug";
+    /**
+     * :return: true si le mode debug est activé, sinon false
+     */
+    estActif() {
+        return document.body.classList.contains("mode-debug");
+    }
 
-/**
- * surveille le clavier pour activer le mode debug
- * :return: rien, l'écouteur est en place
- */
-function initRaccourciDebug() {
-    let touchesTapees = "";
-
-    document.addEventListener("keydown", (evenement) => {
+    /**
+     * retient la touche tapée, et active ou désactive le mode debug quand le mot complet a été tapé
+     * :param evenement: l'événement keydown
+     * :return: rien
+     */
+    gererTouche(evenement) {
         // on ignore les touches spéciales (Entrée, Majuscule, etc.) et les raccourcis avec Ctrl, Alt ou Commande
         if (evenement.key.length !== 1) return;
         if (evenement.ctrlKey || evenement.altKey || evenement.metaKey) return;
 
-        // on ne garde que les dernières lettres tapées, autant qu'il y en a dans CODE_DEBUG
-        touchesTapees = (touchesTapees + evenement.key.toLowerCase()).slice(-CODE_DEBUG.length);
+        // on ne garde que les dernières lettres tapées, autant qu'il y en a dans ModeDebug.CODE
+        this.touchesTapees = (this.touchesTapees + evenement.key.toLowerCase()).slice(-ModeDebug.CODE.length);
 
-        if (touchesTapees === CODE_DEBUG) {
+        if (this.touchesTapees === ModeDebug.CODE) {
             document.body.classList.toggle("mode-debug");
         }
-    });
+    }
+
+    /**
+     * prévient le programme principal quand le joueur clique une case, en mode debug uniquement
+     * :param evenement: l'événement click
+     * :return: rien
+     */
+    gererClic(evenement) {
+        if (!this.estActif()) return;
+
+        const element = evenement.target.closest(".case");
+        if (element === null) return;
+
+        this.surBascule(Number(element.dataset.ligne), Number(element.dataset.colonne));
+    }
 }
+
+// mot à taper n'importe où sur la page pour activer ou désactiver le mode debug
+ModeDebug.CODE = "debug";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // réserve de pièces, score et fin de partie

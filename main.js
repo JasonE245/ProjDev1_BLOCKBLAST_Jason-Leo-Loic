@@ -165,8 +165,8 @@ function surChoixTheme(theme) {
 // on retrouve le thème choisi la dernière fois, et à défaut on prend le premier de la liste
 Themes.appliquer(Themes.trouverParNom(localStorage.getItem(CLE_THEME)));
 Themes.afficherChoix(surChoixTheme);
-initInteractionsGrille(surPosePiece, surBasculeCase);
-initRaccourciDebug();
+initInteractionsGrille(surPosePiece);
+new ModeDebug(surBasculeCase);
 document.getElementById("bouton-rejouer").addEventListener("click", surRejouer);
 
 afficherTout();
