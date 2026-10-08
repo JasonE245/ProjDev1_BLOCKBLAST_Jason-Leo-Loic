@@ -47,8 +47,8 @@ lancer ses tests avec Node, sans navigateur.
 Une vue reçoit la fonction à appeler au moment où elle est créée :
 
 ```js
-const surPose = (idPiece, ligne, colonne) => this.surPosePiece(idPiece, ligne, colonne);
-this.glisserDeposer = new GlisserDeposer(this.vueGrille, surPose);
+const gererPose = (idPiece, ligne, colonne) => this.gererPosePiece(idPiece, ligne, colonne);
+this.glisserDeposer = new GlisserDeposer(this.vueGrille, gererPose);
 ```
 
 La fonction fléchée `=>` sert à garder `this` : sans elle, au moment où le joueur lâche la
@@ -70,7 +70,7 @@ Puisque la partie change sur place, une règle protège le tout : **seul `Jeu` a
 méthodes qui la modifient**. Si la partie se met un jour à changer de façon inattendue,
 il n'y a qu'un seul endroit où chercher.
 
-Conséquence à connaître : l'ordre des opérations compte. Dans `Jeu.surPosePiece`, on a
+Conséquence à connaître : l'ordre des opérations compte. Dans `Jeu.gererPosePiece`, on a
 besoin de savoir quelles lignes vont sauter, pour les faire clignoter. Il faut le
 calculer **avant** de poser la pièce :
 

@@ -112,10 +112,10 @@ classe. À lire en premier quand on découvre le code.
 | 84 | **`class Jeu`** | Crée la partie et les vues, et réagit aux actions du joueur |
 | 88 | `constructor()` | Le démarrage : thème, partie, vues, et les fonctions données à chaque vue |
 | 119 | `afficherTout()` | Redessine toute la page |
-| 133 | `surPosePiece()` | Le joueur a lâché une pièce |
-| 159 | `surBasculeCase()` | Clic en mode debug |
-| 168 | `surRejouer()` | Bouton Rejouer |
-| 178 | `surChoixTheme()` | Choix d'un thème |
+| 133 | `gererPosePiece()` | Le joueur a lâché une pièce |
+| 159 | `gererBasculeCase()` | Clic en mode debug |
+| 168 | `gererRejouer()` | Bouton Rejouer |
+| 178 | `gererChoixTheme()` | Choix d'un thème |
 | 185 | `Jeu.TAILLE_GRILLE` | Côté de la grille, et noms sous lesquels le navigateur retient record et thème |
 | 196 | `const jeu = new Jeu()` | Le démarrage, et le seul nom global de tout le projet |
 
@@ -131,7 +131,7 @@ GlisserDeposer.gererLacher()            l'écouteur posé sur #grille retrouve l
 GlisserDeposer.calculerOrigine()        position du curseur -> coin de la forme
         |
         v
-Jeu.surPosePiece(id, ligne, colonne)    la fonction que le jeu a donnée au glisser-déposer
+Jeu.gererPosePiece(id, ligne, colonne)    la fonction que le jeu a donnée au glisser-déposer
         |
         +-- partie.grille.chercherLignesCasseesPar()    AVANT la pose, pour l'animation
         |
@@ -159,7 +159,7 @@ Jeu.surPosePiece(id, ligne, colonne)    la fonction que le jeu a donnée au glis
 | Changer la fréquence des grosses formes | `game_logic.js` | `Tirage.POIDS_GROSSE_FORME`, ligne 565 |
 | Changer l'animation de suppression | `style.css` | `@keyframes eclair-suppression` |
 | Changer le mot du mode debug | `display.js` | `ModeDebug.CODE`, ligne 436 |
-| Réagir à une nouvelle action du joueur | `main.js` et `display.js` | Une méthode `sur...` dans `Jeu`, passée à la vue concernée dans le constructeur |
+| Réagir à une nouvelle action du joueur | `main.js` et `display.js` | Une méthode `gerer...` dans `Jeu`, passée à la vue concernée dans le constructeur |
 | Ajouter un test | `test/game_logic.test.js` | puis `npm test` |
 
 ---

@@ -49,10 +49,10 @@ class Themes {
 
     /**
      * remplit le panneau de choix de thème et branche le bouton qui l'ouvre
-     * :param surChoix: fonction appelée avec le thème choisi quand le joueur clique une pastille
+     * :param gererChoix: fonction appelée avec le thème choisi quand le joueur clique une pastille
      * :return: rien, le panneau est rempli
      */
-    static afficherChoix(surChoix) {
+    static afficherChoix(gererChoix) {
         const panneau = document.getElementById("panneau-themes");
 
         for (const theme of Themes.LISTE) {
@@ -60,7 +60,7 @@ class Themes {
             pastille.className = "pastille-theme";
             pastille.style.background = theme.pleine;
             pastille.title = theme.nom;
-            pastille.addEventListener("click", () => surChoix(theme));
+            pastille.addEventListener("click", () => gererChoix(theme));
             panneau.appendChild(pastille);
         }
 
@@ -266,11 +266,11 @@ class GlisserDeposer {
     /**
      * branche les écouteurs sur la grille
      * :param vueGrille: la VueGrille, qui connaît la partie affichée et sait dessiner l'aperçu
-     * :param surPose: fonction appelée avec (idPiece, ligne, colonne) quand le joueur lâche une pièce
+     * :param gererPose: fonction appelée avec (idPiece, ligne, colonne) quand le joueur lâche une pièce
      */
-    constructor(vueGrille, surPose) {
+    constructor(vueGrille, gererPose) {
         this.vueGrille = vueGrille;
-        this.surPose = surPose;
+        this.gererPose = gererPose;
         // identifiant de la pièce en cours de glisser-déposer, ou null. C'est de l'affichage, pas de l'état du jeu.
         this.idPieceGlissee = null;
 
@@ -366,7 +366,7 @@ class GlisserDeposer {
         this.vueGrille.effacerApercu();
 
         const origine = this.calculerOrigine(cible.piece.forme, cible.element, evenement);
-        this.surPose(cible.piece.id, origine.ligne, origine.colonne);
+        this.gererPose(cible.piece.id, origine.ligne, origine.colonne);
     }
 }
 
@@ -379,10 +379,10 @@ class GlisserDeposer {
 class ModeDebug {
     /**
      * branche le clavier et le clic sur la grille
-     * :param surBascule: fonction appelée avec (ligne, colonne) quand le joueur clique une case en mode debug
+     * :param gererBascule: fonction appelée avec (ligne, colonne) quand le joueur clique une case en mode debug
      */
-    constructor(surBascule) {
-        this.surBascule = surBascule;
+    constructor(gererBascule) {
+        this.gererBascule = gererBascule;
         // dernières lettres tapées, autant qu'il y en a dans le mot à taper
         this.touchesTapees = "";
 
@@ -428,7 +428,7 @@ class ModeDebug {
         const element = evenement.target.closest(".case");
         if (element === null) return;
 
-        this.surBascule(Number(element.dataset.ligne), Number(element.dataset.colonne));
+        this.gererBascule(Number(element.dataset.ligne), Number(element.dataset.colonne));
     }
 }
 
@@ -533,16 +533,16 @@ class VueScore {
     /**
      * retrouve les éléments de la page et branche le bouton "Rejouer"
      * les éléments sont cherchés une seule fois : ils restent les mêmes pendant tout le jeu
-     * :param surRejouer: fonction appelée quand le joueur clique sur "Rejouer"
+     * :param gererRejouer: fonction appelée quand le joueur clique sur "Rejouer"
      */
-    constructor(surRejouer) {
+    constructor(gererRejouer) {
         this.elementScore = document.getElementById("score");
         this.elementRecord = document.getElementById("record");
         this.elementCombo = document.getElementById("combo");
         this.ecranFin = document.getElementById("fin-de-partie");
         this.elementScoreFinal = document.getElementById("score-final");
 
-        document.getElementById("bouton-rejouer").addEventListener("click", surRejouer);
+        document.getElementById("bouton-rejouer").addEventListener("click", gererRejouer);
     }
 
     /**

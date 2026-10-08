@@ -97,15 +97,15 @@ class Jeu {
 
         // chaque vue reçoit la fonction à appeler quand le joueur agit
         // les fonctions fléchées gardent "this" : sans elles, this ne désignerait plus le jeu au moment de l'appel
-        const surPose = (idPiece, ligne, colonne) => this.surPosePiece(idPiece, ligne, colonne);
-        const surBascule = (ligne, colonne) => this.surBasculeCase(ligne, colonne);
+        const gererPose = (idPiece, ligne, colonne) => this.gererPosePiece(idPiece, ligne, colonne);
+        const gererBascule = (ligne, colonne) => this.gererBasculeCase(ligne, colonne);
 
-        Themes.afficherChoix((theme) => this.surChoixTheme(theme));
+        Themes.afficherChoix((theme) => this.gererChoixTheme(theme));
         this.vueGrille = new VueGrille();
-        this.glisserDeposer = new GlisserDeposer(this.vueGrille, surPose);
+        this.glisserDeposer = new GlisserDeposer(this.vueGrille, gererPose);
         this.vueReserve = new VueReserve(this.glisserDeposer);
-        this.vueScore = new VueScore(() => this.surRejouer());
-        this.modeDebug = new ModeDebug(surBascule);
+        this.vueScore = new VueScore(() => this.gererRejouer());
+        this.modeDebug = new ModeDebug(gererBascule);
 
         this.afficherTout();
     }
@@ -130,7 +130,7 @@ class Jeu {
      * :param colonne: colonne du coin haut-gauche
      * :return: rien
      */
-    surPosePiece(idPiece, ligne, colonne) {
+    gererPosePiece(idPiece, ligne, colonne) {
         const piece = this.partie.trouverPiece(idPiece);
         if (piece === null) return;
 
@@ -156,7 +156,7 @@ class Jeu {
      * :param colonne: colonne de la case
      * :return: rien
      */
-    surBasculeCase(ligne, colonne) {
+    gererBasculeCase(ligne, colonne) {
         this.partie.basculerCase(ligne, colonne);
         this.afficherTout();
     }
@@ -165,7 +165,7 @@ class Jeu {
      * appelée quand le joueur clique sur "Rejouer"
      * :return: rien
      */
-    surRejouer() {
+    gererRejouer() {
         this.partie = new Partie(Jeu.TAILLE_GRILLE, Themes.NB_COULEURS);
         this.afficherTout();
     }
@@ -175,7 +175,7 @@ class Jeu {
      * :param theme: le thème choisi
      * :return: rien
      */
-    surChoixTheme(theme) {
+    gererChoixTheme(theme) {
         Themes.appliquer(theme);
         localStorage.setItem(Jeu.CLE_THEME, theme.nom);
     }
