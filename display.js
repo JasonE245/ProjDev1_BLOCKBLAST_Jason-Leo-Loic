@@ -2,7 +2,7 @@
 // par : Roux Loïc, Léo Del Duca, Jason Roger Marc Edmonds
 // créé le : 18.08.2026
 // Version: V.3.0
-// dernière modif: 08.10.2026
+// dernière modif: 27.10.2026
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Ce fichier contient tout ce qui touche à la page. Ses classes lisent la partie mais ne la modifient jamais : quand
 // le joueur fait quelque chose, elles préviennent le jeu (la classe Jeu de main.js) en appelant la fonction qu'il
@@ -176,6 +176,36 @@ class VueGrille {
     }
 
     /**
+     * traduit la position de la souris en coordonnées de la grille, virgule comprise => 2.5 = au milieu de la 3e case
+     * le calcul part de la grille entière et non de la case survolée : il marche donc aussi quand la souris est sur
+     * l'espace entre deux cases, où il n'y a aucune case sous le curseur
+     * :param evenement: l'événement de souris
+     * :return: un objet {ligne, colonne}, ou null si la souris est sur la marge, en dehors des cases
+     */
+    calculerPositionCurseur(evenement) {
+        const rectangle = this.conteneur.getBoundingClientRect();
+
+        // la marge autour des cases et l'espace entre elles sont lus dans le CSS, pour ne pas les recopier ici
+        const style = getComputedStyle(this.conteneur);
+        const margeHaut = parseFloat(style.paddingTop);
+        const margeGauche = parseFloat(style.paddingLeft);
+
+        // distance entre le début d'une case et le début de la suivante, espace compris
+        const pasLigne = VueGrille.TAILLE_CASE + parseFloat(style.rowGap);
+        const pasColonne = VueGrille.TAILLE_CASE + parseFloat(style.columnGap);
+
+        // position de la souris dans la zone des cases, en nombre de cases
+        const ligne = (evenement.clientY - rectangle.top - margeHaut) / pasLigne;
+        const colonne = (evenement.clientX - rectangle.left - margeGauche) / pasColonne;
+
+        // souris sur la marge autour des cases : on fait comme si elle était en dehors de la grille
+        const taille = this.partieAffichee.grille.taille;
+        if (ligne < 0 || ligne >= taille || colonne < 0 || colonne >= taille) return null;
+
+        return { ligne: ligne, colonne: colonne };
+    }
+
+    /**
      * redessine entièrement la grille à partir de la partie
      * :param partie: la partie en cours
      * :return: rien, la grille est reconstruite
@@ -317,39 +347,36 @@ class GlisserDeposer {
      * traduit la position du curseur en coin haut-gauche de la forme
      * sans ce calcul la pièce s'accrocherait par son coin, alors qu'on veut qu'elle paraisse centrée sous le curseur
      * :param forme: nom de la forme glissée
-     * :param element: la case survolée
-     * :param evenement: l'événement de souris, pour la position exacte dans la case
+     * :param curseur: position de la souris en nombre de cases, donnée par VueGrille.calculerPositionCurseur
      * :return: un objet {ligne, colonne}, éventuellement hors de la grille
      */
-    calculerOrigineDePose(forme, element, evenement) {
+    calculerOrigineDePose(forme, curseur) {
         const taille = Forme.trouverParNom(forme).calculerTaille();
-
-        // position du curseur en nombre de cases, virgule comprise
-        const ligneCurseur = Number(element.dataset.ligne) + evenement.offsetY / VueGrille.TAILLE_CASE;
-        const colonneCurseur = Number(element.dataset.colonne) + evenement.offsetX / VueGrille.TAILLE_CASE;
 
         // on recule d'une demi-forme pour que le curseur se retrouve au milieu
         return {
-            ligne: Math.round(ligneCurseur - taille.lignes / 2),
-            colonne: Math.round(colonneCurseur - taille.colonnes / 2),
+            ligne: Math.round(curseur.ligne - taille.lignes / 2),
+            colonne: Math.round(curseur.colonne - taille.colonnes / 2),
         };
     }
 
     /**
-     * retrouve la case survolée et la pièce en cours de glisser
+     * retrouve la pièce en cours de glisser et la position de la souris sur la grille
      * :param evenement: l'événement de souris
-     * :return: un objet {element, piece}, ou null si l'événement ne concerne pas une case ou si rien n'est glissé
+     * :return: un objet {piece, curseur}, ou null si rien n'est glissé ou si la souris est en dehors des cases
      */
     trouverCible(evenement) {
-        // closest remonte de l'élément touché jusqu'à la case qui le contient ; renvoie null pour la marge de la grille
         const partie = this.vueGrille.partieAffichee;
-        const element = evenement.target.closest(".case");
-        if (element === null || partie === null) return null;
+        if (partie === null) return null;
 
         const piece = partie.trouverPiece(this.idPieceGlissee);
         if (piece === null) return null;
 
-        return { element: element, piece: piece };
+        // null quand la souris est sur la marge de la grille : la pièce ne doit pas pouvoir y être lâchée
+        const curseur = this.vueGrille.calculerPositionCurseur(evenement);
+        if (curseur === null) return null;
+
+        return { piece: piece, curseur: curseur };
     }
 
     /**
@@ -365,7 +392,7 @@ class GlisserDeposer {
         evenement.preventDefault();
         evenement.dataTransfer.dropEffect = "move";
 
-        const origine = this.calculerOrigineDePose(cible.piece.forme, cible.element, evenement);
+        const origine = this.calculerOrigineDePose(cible.piece.forme, cible.curseur);
         this.vueGrille.afficherApercu(cible.piece.forme, origine.ligne, origine.colonne);
     }
 
@@ -381,7 +408,7 @@ class GlisserDeposer {
         evenement.preventDefault();
         this.vueGrille.effacerApercu();
 
-        const origine = this.calculerOrigineDePose(cible.piece.forme, cible.element, evenement);
+        const origine = this.calculerOrigineDePose(cible.piece.forme, cible.curseur);
         this.gererPose(cible.piece.id, origine.ligne, origine.colonne);
     }
 }
