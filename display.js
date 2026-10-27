@@ -386,9 +386,13 @@ class GlisserDeposer {
      */
     gererSurvol(evenement) {
         const cible = this.trouverCible(evenement);
-        if (cible === null) return;
+        if (cible === null) {
+            // souris sur la marge : on efface l'aperçu, sinon il montrerait une pose que le lâcher refusera
+            this.vueGrille.effacerApercu();
+            return;
+        }
 
-        // sans preventDefault, le navigateur refuse le lâcher sur cette case
+        // sans preventDefault, le navigateur refuse le lâcher à cet endroit
         evenement.preventDefault();
         evenement.dataTransfer.dropEffect = "move";
 
