@@ -172,8 +172,14 @@ multiplicateur est plafonné pour que le combo ne s'emballe pas.
 
 `GlisserDeposer` pose ses écouteurs une seule fois, sur `#grille`, et pas sur les 64
 cases : `VueGrille.afficher` recrée les cases à chaque affichage, et des écouteurs posés
-dessus seraient perdus à chaque tour. Le navigateur fait remonter l'événement de la case
-jusqu'à la grille, et `evenement.target.closest(".case")` retrouve la case concernée.
+dessus seraient perdus à chaque tour. Le navigateur fait remonter l'événement jusqu'à la
+grille, et `VueGrille.calculerPositionCurseur` traduit la position de la souris en
+coordonnées de la grille.
+
+Ce calcul part de la grille entière, et pas de la case sous la souris. Entre deux cases, il
+y a un espace de 2 pixels où la souris ne touche aucune case : si on partait de la case
+survolée, une pièce lâchée pile à cet endroit serait refusée alors que l'aperçu la montre
+bien placée. Seule la marge autour des cases refuse le lâcher.
 
 Trois détails qui ne se devinent pas :
 
